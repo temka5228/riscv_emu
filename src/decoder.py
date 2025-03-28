@@ -1,9 +1,16 @@
-from instructions import Instructions
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import riscv_emu
+    import instructions
 
 class Decoder:
+    def __init__(self, emu: riscv_emu.RISCVEmu):
+        self.emu = emu
     
-    def decode(self, instruction: Instructions):
-        opcode = instruction & 0x7F >> 2 # код операции 6-2
+    def decode(self, instruction: hex):
+        opcode = (instruction >> 2) & 0x1F # код операции 6-2
+        print('in decode method', instruction, hex(instruction >> 2), hex(opcode))
         match opcode:
             case 0x0D: # lui
                 rd = (instruction >> 7) & 0x1F 
@@ -45,35 +52,44 @@ class Decoder:
                 rs1 = (instruction >> 15) & 0x1F
                 rs2 = (instruction >> 20) & 0x1F
                 funct3 = (instruction >> 12) & 0x07
-                match funct3:
-                    case 0b000: # add and sub
-                        match (instruction >> 27):
-                            case 0x00: # сложить два числа из регистров
-                                return {'type': 'add', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                            case 0x08: # вычесть из rs1 число rs2
-                                return {'type': 'sub', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                            case _: raise Exception(f'Unknown 31-27 bits in add or sub: {hex(instruction >> 27)}')
-                    case 0b001: # логический левый сдвиг rs1 на 5 младших битов в rs2
-                        return {'type': 'sll', 'rd': rd, 'rs1': rs1, 'rs2':rs2}
-                    case 0b010: # rs1 < rs2 (signed)
-                        return {'type': 'slt', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b011: # rs1 < rs2 (unsigned)
-                        return {'type': 'sltu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b100: # rs1 xor rs2
-                        return {'type': 'xor', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b101:
-                        match instruction >> 27:
-                            case 0b00000: # логический сдвиг rs1 на 5 младших битов в rs2
-                                return {'type': 'srl', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                            case 0b01000: # арифметический правый сдвиг rs1 на 5 младших битов в rs2
-                                return {'type': 'sra', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                            case _: 
-                                raise Exception(f'Unknown 31-27 bits in reg/reg operation: {hex(instruction >> 27)}')
-                    case 0b110: # rs1 or rs2
-                        return {'type': 'or', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b111: # rs1 and rs2
-                        return {'type': 'and', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case _: raise Exception(f'Unknown funct3 in reg/reg: {hex(funct3)}')
+                funct2625 = (instruction >> 25) & 0x03
+                match funct2625:
+                    case 0b00:
+                        match funct3:
+                            case 0b000: # add and sub
+                                match (instruction >> 27):
+                                    case 0x00: # сложить два числа из регистров
+                                        return {'type': 'add', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                                    case 0x08: # вычесть из rs1 число rs2
+                                        return {'type': 'sub', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                                    case _: raise Exception(f'Unknown 31-27 bits in add or sub: {hex(instruction >> 27)}')
+                            case 0b001: # логический левый сдвиг rs1 на 5 младших битов в rs2
+                                return {'type': 'sll', 'rd': rd, 'rs1': rs1, 'rs2':rs2}
+                            case 0b010: # rs1 < rs2 (signed)
+                                return {'type': 'slt', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b011: # rs1 < rs2 (unsigned)
+                                return {'type': 'sltu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b100: # rs1 xor rs2
+                                return {'type': 'xor', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b101:
+                                match instruction >> 27:
+                                    case 0b00000: # логический сдвиг rs1 на 5 младших битов в rs2
+                                        return {'type': 'srl', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                                    case 0b01000: # арифметический правый сдвиг rs1 на 5 младших битов в rs2
+                                        return {'type': 'sra', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                                    case _: 
+                                        raise Exception(f'Unknown 31-27 bits in reg/reg operation: {hex(instruction >> 27)}')
+                            case 0b110: # rs1 or rs2
+                                return {'type': 'or', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b111: # rs1 and rs2
+                                return {'type': 'and', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case _: raise Exception(f'Unknown funct3 in reg/reg: {hex(funct3)}')
+                    case 0b01:
+                        match funct3:
+                            case 0b111:
+                                print('decode remu')
+                                return {'type': 'remu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+
 
             case 0x03:
                 funct3 = (instruction >> 12) & 0x07
@@ -208,111 +224,124 @@ class Decoder:
             case _: 
                 raise Exception(f'Unknown pd: {hex(opcode)}')
 
-        """
-            case 0x0: # lui
-                rd = (instruction >> 7) & 0x1F 
-                imm = ((instruction >> 20) & 0xFFF) << 12 | (instruction >> 20) & 0xFFE00
-                return {'type': 'li', 'rd': rd, 'imm': imm}
-            case 0x63:  # Branch (B-Type)
-                rs1 = (instruction >> 15) & 0x1F
-                rs2 = (instruction >> 20) & 0x1F
-                offset = ((instruction >> 7) & 0x1E) | ((instruction >> 24) & 0x7FE)
-                if instruction & 0x80:
-                    offset |= 0xFFFFF800
-                return {'type': 'beq', 'rs1': rs1, 'rs2': rs2, 'offset': offset}
-            case 0x3:   # Load (I-Type)
-                rd = (instruction >> 7) & 0x1F
-                imm = ((instruction >> 12) & 0xFFF) << 12 | (instruction >> 20) & 0xFFE00
-                rs1 = (instruction >> 15) & 0x1F
-                return {'type': 'lw', 'rd': rd, 'offset': imm, 'base': rs1}
-            case 0x23:  # Store (S-Type)
-                imm = ((instruction >> 7) & 0xFE) | ((instruction >> 25) & 0x80)
-                rs1 = (instruction >> 15) & 0x1F
-                rs2 = (instruction >> 20) & 0x1F
-                return {'type': 'sw', 'rs2': rs2, 'offset': imm, 'base': rs1}
-            case 0x73:  # Environmental Call (I-Type)
-                return {'type': 'ecall'}
-            case 0x6F:  # Jump (J-Type)
-                offset = ((instruction >> 21) & 0x7FF) | ((instruction >> 20) & 0x800) | \
-                        ((instruction >> 12) & 0xFF000) | ((instruction >> 11) & 0x100000)
-                return {'type': 'jal', 'rd': (instruction >> 7) & 0x1F, 'offset': offset}
-            case 0x1B:  # Immediate Shift/Arithmetic
-                rd = (instruction >> 7) & 0x1F
-                rs1 = (instruction >> 15) & 0x1F
-                imm = ((instruction >> 20) & 0xFFF) << 12 | (instruction >> 20) & 0xFFE00
-                shamt = imm >> 12
-                funct3 = (instruction >> 12) & 0x7
-                if funct3 == 0b000:
-                    return {'type': 'addi', 'rd': rd, 'rs1': rs1, 'imm': imm}
-                elif funct3 == 0b011:
-                    return {'type': 'sll', 'rd': rd, 'rs1': rs1, 'shamt': shamt}
-                elif funct3 == 0b101:
-                    return {'type': 'sr', 'rd': rd, 'rs1': rs1, 'shamt': shamt}
-            case 0x3B:  # Arithmetic
-                rd = (instruction >> 7) & 0x1F
-                rs1 = (instruction >> 15) & 0x1F
-                rs2 = (instruction >> 20) & 0x1F
-                funct3 = (instruction >> 12) & 0x7
-                match funct3:
-                    case 0b000:
-                        return {'type': 'add', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b001:
-                        return {'type': 'sll', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b010:
-                        return {'type': 'slt', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b011:
-                        return {'type': 'sltu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b100:
-                        return {'type': 'xor', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b101:
-                        return {'type': 'sr', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b110:
-                        return {'type': 'or', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case 0b111:
-                        return {'type': 'and', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
-                    case _:
-                        raise ()"
-        """
-        #else:
-        #    raise Exception(f"Unknown opcode: {hex(opcode)}")
 
-        def execute_instruction(self, instruction:Instructions):
-            decoded = self.decoder.decode(instruction)
-            match decoded['type']:
-                case 'li':
-                    self.instructions.lui(decoded['rd'], decoded['imm'])
-                case 'addi':
-                case 'lw':
-                case 'ecall':
-                case 'beq':
-
-                case 'add':
-                
-            if decoded['type'] == 'li':
-                self.instructions.li(decoded['rd'], decoded['imm'])
-            elif decoded['type'] == 'addi':
-                self.instructions.addi(decoded['rd'], decoded['rs1'], decoded['imm'])
-            elif decoded['type'] == 'lw':
-                self.instructions.lw(decoded['rd'], decoded['offset'], decoded['base'])
-            elif decoded['type'] == 'sw':
-                self.instructions.sw(decoded['rs2'], decoded['offset'], decoded['base'])
-            elif decoded['type'] == 'ecall':
-                self.instructions.ecall()
-            elif decoded['type'] == 'beq':
-                self.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
-            elif decoded['type'] == 'add':
-                self.instructions.add(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            elif decoded['type'] == 'sub':
-                self.instructions.sub(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            elif decoded['type'] == 'and':
-                self.instructions.and_(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            elif decoded['type'] == 'or':
-                self.instructions.or_(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            elif decoded['type'] == 'xor':
-                self.instructions.xor(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            elif decoded['type'] == 'sll':
-                self.instructions.sll(decoded['rd'], decoded['rs1'], decoded['shamt'])
-            elif decoded['type'] == 'srl':
-                self.instructions.srl(decoded['rd'], decoded['rs1'], decoded['shamt'])
-            else:
-                raise Exception(f"Unknown instruction type: {decoded['type']}")
+    def execute_instruction(self, instruction):
+        decoded = self.decode(instruction)
+        match decoded['type']:
+            case 'lui':
+                self.emu.instructions.lui(decoded['rd'], decoded['imm'])
+            case 'auipc':
+                self.emu.instructions.auipc(decoded['rd'], decoded['imm'])
+            case 'addi':
+                self.emu.instructions.addi(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'slti':
+                self.emu.instructions.slti(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'sltiu':
+                self.emu.instructions.sltiu(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'xori':
+                self.emu.instructions.xori(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'ori':
+                self.emu.instructions.ori(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'andi':
+                self.emu.instructions.andi(decoded['rd'], decoded['rs1'], decoded['imm'])
+            case 'slli':
+                self.emu.instructions.slli(decoded['rd'], decoded['rs1'], decoded['shamt'])
+            case 'srli':
+                self.emu.instructions.srli(decoded['rd'], decoded['rs1'], decoded['shamt'])
+            case 'srai':
+                self.emu.instructions.srai(decoded['rd'], decoded['rs1'], decoded['shamt'])
+            case 'lw':
+                self.emu.instructions.lw(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'sw':
+                self.emu.instructions.sw(decoded['offset'], decoded['rs1'], decoded['rs2'])
+            case 'ecall':
+                self.emu.instructions.ecall()
+            case 'beq':
+                print('called beq')
+                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'add':
+                self.emu.instructions.add(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'sub':
+                self.emu.instructions.sub(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'slt':
+                self.emu.instructions.slt(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'sltu':
+                self.emu.instructions.sltu(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'and_':
+                self.emu.instructions.and_(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'or_':
+                self.emu.instructions.or_(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'xor':
+                self.emu.instructions.xor(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'sll':
+                self.emu.instructions.sll(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'srl':
+                self.emu.instructions.srl(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'sra':
+                self.emu.instructions.sra(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'fence':
+                self.emu.instructions.fence(decoded['succ'], decoded['pred'])
+            case 'fencei':
+                self.emu.instructions.fencei()
+            case 'csrrw':
+                self.emu.instructions.csrrw(decoded['rd'], decoded['rs1'], decoded['csr'])
+            case 'csrrs':
+                self.emu.instructions.csrrs(decoded['rd'], decoded['rs1'], decoded['csr'])
+            case 'csrrc':
+                self.emu.instructions.csrrc(decoded['rd'], decoded['rs1'], decoded['csr'])
+            case 'csrrwi':
+                self.emu.instructions.csrrwi(decoded['rd'], decoded['uimm'], decoded['csr'])
+            case 'csrrsi':
+                self.emu.instructions.csrrsi(decoded['rd'], decoded['uimm'], decoded['csr'])
+            case 'csrrci':
+                self.emu.instructions.csrrc(decoded['rd'], decoded['uimm'], decoded['csr'])
+            case 'ecall':
+                self.emu.instructions.ecall()
+            case 'ebreak':
+                self.emu.instructions.ebreak()
+            case 'uret':
+                self.emu.instructions.uret()
+            case 'sret':
+                self.emu.instructions.sret()
+            case 'mret':
+                self.emu.instructions.mret()
+            case 'wfi':
+                self.emu.instructions.wfi()
+            case 'sfencevma':
+                self.emu.instructions.sfencevma(decoded['rd'], decoded['rs1'], decoded['rs2'])
+            case 'lb':
+                self.emu.instructions.lb(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'lh':
+                self.emu.instructions.lh(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'lw':
+                self.emu.instructions.lw(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'lbu':
+                self.emu.instructions.lbu(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'lhu':
+                self.emu.instructions.lhu(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'sb':
+                self.emu.instructions.sb(decoded['offset'], decoded['rs1'], decoded['rs2'])
+            case 'sh':
+                self.emu.instructions.sh(decoded['offset'], decoded['rs1'], decoded['rs2'])
+            case 'sw':
+                self.emu.instructions.sw(decoded['offset'], decoded['rs1'], decoded['rs2'])
+            case 'jal':
+                self.emu.instructions.jal(decoded['rd'], decoded['offset'])
+            case 'jalr':
+                self.emu.instructions.jalr(decoded['rd'], decoded['rs1'], decoded['offset'])
+            case 'beq':
+                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'bne':
+                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'blt':
+                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'bge':
+                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'bltu':
+                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'bgeu':
+                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'])
+            case 'remu':
+                print('call remu')
+                self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case _ as t: raise Exception(f'Unknown decoded[type] = {t}')

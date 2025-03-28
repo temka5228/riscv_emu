@@ -1,8 +1,12 @@
 # instructions.py
-from riscv_emu import RISCVEmu
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    import riscv_emu
+#from riscv_emu import RISCVEmu
 
 class Instructions:
-    def __init__(self, emu: RISCVEmu) -> None:
+    def __init__(self, emu: riscv_emu.RISCVEmu) -> None:
         self.emu = emu
 
     def lui(self, rd, imm):
@@ -97,8 +101,9 @@ class Instructions:
         print(f"Value in x10: {value}")
 
     def beq(self, rs1, rs2, offset):
+        print(f'in beq: {offset << 1}')
         if self.emu.registers.read(rs1) == self.emu.registers.read(rs2):
-            self.emu.pc += (offset << 1)
+            self.emu.pc = (offset << 1)
 
     def add(self, rd, rs1, rs2):
         '''Adds the registers rs1 and rs2 and stores the result in rd.
@@ -200,7 +205,7 @@ class Instructions:
         self.emu.registers.write(rd, self.emu.csr.read(csr))
         self.emu.csr.write(csr, self.emu.csr.read(csr) | uimm)
 
-    def csrrc(self, rd, uimm, csr):
+    def csrrci(self, rd, uimm, csr):
         '''Clear CSR bit using an XLEN-bit value obtained by zero-extending 
         a 5-bit unsigned immediate (uimm[4:0]) field encoded in the rs1 field.'''
         value = self.emu.csr.read(csr)
@@ -279,10 +284,6 @@ class Instructions:
         self.emu.pc = (self.emu.registers.read(rs1) + offset) & ~1
         self.emu.registers.write(rd, value)
 
-    def beq(self, rs1, rs2, offset):
-        if self.emu.registers.read(rs1) == self.emu.registers.read(rs2):
-            self.emu.pc += offset
-
     def bne(self, rs1, rs2, offset):
         if self.emu.registers.read(rs1) != self.emu.registers.read(rs2):
             self.emu.pc += offset
@@ -302,4 +303,10 @@ class Instructions:
     def bgeu(self, rs1, rs2, offset):
         if self.emu.registers.read(rs1) >= self.emu.registers.read(rs2):
             self.emu.pc += offset
-    
+
+    """    R32M INSTRUCTIONS    """
+
+    def remu(self, rs1, rs2, rd):
+        print('execute remu')
+        value = self.emu.registers.read(rs1) % self.emu.registers.read(rs2)
+        self.emu.registers.write(rd, value)

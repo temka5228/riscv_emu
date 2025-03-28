@@ -2,7 +2,7 @@
 
 class Registers:
     def __init__(self, length=32):
-        self.__registers = [0] * length
+        self.__registers = dict.fromkeys(range(length), 0)
 
     def read(self, reg_num:int) -> int:
         if not (0 <= reg_num < 32):
@@ -18,3 +18,8 @@ class Registers:
 
     def __repr__(self):
         return f"RegisterFile({self.registers})"
+    
+    def __str__(self):
+        keyarr = list(map(lambda x: 'X' + str(x), self.__registers.keys()))
+        reg = dict(zip(keyarr, self.__registers.values()))
+        return f'Registers list:\n{reg}'

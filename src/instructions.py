@@ -5,39 +5,62 @@ if TYPE_CHECKING:
     import riscv_emu
 #from riscv_emu import RISCVEmu
 
+def sext(number, len_significant):
+    sign = number >> len_significant
+    if sign == 1:
+        mask = (1 << len_significant) - 1
+        signextended_number = - (((number & mask) - 1) ^ mask)
+        return signextended_number
+    else:
+        return number
+    
+def to_sext(number, len_significant):
+    sign = 1 if number < 0 else 0
+    if sign == 1:
+        mask = (1 << len_significant) - 1
+        number = abs(number)
+        number = number ^ mask + 1
+    number &= mask
+
+    
+
+
 class Instructions:
     def __init__(self, emu: riscv_emu.RISCVEmu) -> None:
         self.emu = emu
 
-    def lui(self, rd, imm):
+    def lui(self, rd, imm:np.int32):
         '''Build 32-bit constants and uses the U-type format. 
         LUI places the U-immediate value in the top 20 bits 
         of the destination register rd, filling in the lowest 12 bits with zeros.'''
-        self.emu.registers.write(rd, imm << 12)
+        imm = sext(imm << 12, 31)
+        self.emu.registers[rd] = imm
     
     def auipc(self, rd, imm):
         '''Build pc-relative addresses and uses the U-type format. 
         AUIPC forms a 32-bit offset from the 20-bit U-immediate, 
         filling in the lowest 12 bits with zeros, adds this offset to the pc, 
         then places the result in register rd.'''
-        value = self.emu.memory.read(self.emu.pc) + imm << 12
-        self.emu.register.write(rd, value)
+        value = self.emu.memory[self.emu.pc] + sext(imm << 12, 31)
+        self.emu.registers[rd] = value
 
     def addi(self, rd, rs1, imm):
         '''Adds the sign-extended 12-bit immediate to register rs1. 
         Arithmetic overflow is ignored and the result is simply the low XLEN bits
         of the result. ADDI rd, rs1, 0 is used to implement the MV rd, 
         rs1 assembler pseudo-instruction.'''
-        value = self.emu.registers.read(rs1) + imm
-        self.emu.registers.write(rd, value)
+        value = sext(self.emu.registers[rs1], 31) + sext(imm, 11)
+        self.emu.registers[rd] = value
 
     def slti(self, rd, rs1, imm):
+        # I GUESS IT WORK
         '''Place the value 1 in register rd if register rs1 is less than the signextended 
         immediate when both are treated as signed numbers, else 0 is written to rd.'''
-        value = 1 if self.emu.registers.read(rs1) < imm else 0
+        value = 1 if sext(self.emu.registers[rs1], 31) < sext(imm, 11) else 0
         self.emu.registers.write(rd, value)
 
     def sltiu(self, rd, rs1, imm):
+        #NEED TO REFACTOR!!!
         '''Place the value 1 in register rd if register rs1 is less than the immediate
         when both are treated as unsigned numbers, else 0 is written to rd.'''
         value = 1 if self.emu.registers.read(rs1) < imm else 0
@@ -74,26 +97,16 @@ class Instructions:
         '''Performs logical right shift on the value in register rs1 by the shift 
         amount held in the lower 5 bits of the immediate
         In RV64, bit-25 is used to shamt[5].'''
-        value = self.emu.registers.read(rs1) >> shamt
-        self.emu.registers.write(rd, value)
+        value = self.emu.registers[rs1] >> shamt
+        self.emu.registers[rd] = value
     
     def srai(self, rd, rs1, shamt):
+        # hard to relize
         '''Performs arithmetic right shift on the value in register rs1 by the shift 
         amount held in the lower 5 bits of the immediate
         In RV64, bit-25 is used to shamt[5].'''
-        value = self.emu.registers.read(rs1) >> shamt
-        self.emu.registers.write(rd, value)
-
-    def lw(self, rd, offset, base):
-        
-        address = self.emu.registers.read(base) + offset
-        value = self.emu.memory.read(address)
-        self.emu.registers.write(rd, value)
-
-    def sw(self, rs2, offset, base):
-        address = self.emu.registers.read(base) + offset
-        value = self.emu.registers.read(rs2)
-        self.emu.memory.write(address, value)
+        value = self.emu.registers[rs1] >> shamt
+        self.emu.registers[rd] = value
 
     def ecall(self):
         # Simple system call: print the value in x10
@@ -101,9 +114,10 @@ class Instructions:
         print(f"Value in x10: {value}")
 
     def beq(self, rs1, rs2, offset):
-        print(f'in beq: {offset << 1}')
         if self.emu.registers.read(rs1) == self.emu.registers.read(rs2):
-            self.emu.pc = (offset << 1)
+            offset = sext(offset, 12)
+            self.emu.pc += offset - 4
+
 
     def add(self, rd, rs1, rs2):
         '''Adds the registers rs1 and rs2 and stores the result in rd.
@@ -111,6 +125,7 @@ class Instructions:
         XLEN bits of the result.'''
         value = self.emu.registers.read(rs1) + self.emu.registers.read(rs2)
         self.emu.registers.write(rd, value)
+        #print(f'def add writed the reg {rd, self.emu.registers.read(rd)}')
 
     def sub(self, rd, rs1, rs2):
         '''Subs the register rs2 from rs1 and stores the result in rd.
@@ -230,7 +245,7 @@ class Instructions:
         return Exception(f'm-mode Machine')
     
     def wfi(self):
-        pass
+        raise Exception(f'ENDPOINT "WFI"')
 
     def sfencevma(self, rd, rs1, rs2):
         pass
@@ -238,44 +253,53 @@ class Instructions:
     def lb(self, rd, rs1, offset):
         '''Loads a 8-bit value from memory and sign-extends 
         this to XLEN bits before storing it in register rd.'''
+        offset = sext(offset, 11)
         value = self.emu.memory.read(self.emu.registers.read(rs1) + offset) & 0xFF
         self.emu.registers.write(rd, value)
     #sext
     def lh(self, rd, rs1, offset):
         '''Loads a 16-bit value from memory and sign-extends 
         this to XLEN bits before storing it in register rd.'''
+        offset = sext(offset, 11)
         value = self.emu.memory.read(self.emu.registers.read(rs1) + offset) & 0xFFFF
         self.emu.registers.write(rd, value)
     #sext
     def lw(self, rd, rs1, offset):
         '''Loads a 32-bit value from memory and sign-extends 
         this to XLEN bits before storing it in register rd.'''
+        offset = sext(offset, 11)
         value = self.emu.memory.read(self.emu.registers.read(rs1) + offset) & 0xFFFFFFFF
         self.emu.registers.write(rd, value)
     
     def lbu(self, rd, rs1, offset):
         '''Loads a 8-bit value from memory and zero-extends this to XLEN bits before storing it in register rd.'''
+        offset = sext(offset, 11)
         value = self.emu.memory.read(self.emu.registers.read(rs1) + offset) & 0xFF
         self.emu.registers.write(rd, value)
 
     def lhu(self, rd, rs1, offset):
         '''Loads a 16-bit value from memory and zero-extends this to XLEN bits before storing it in register rd.'''
+        offset = sext(offset, 11)
         value = self.emu.memory.read(self.emu.registers.read(rs1) + offset) & 0xFFFF
         self.emu.registers.write(rd, value)
 
     def sb(self, offset, rs1, rs2):
+        offset = sext(offset, 11)
         value = self.emu.registers.read(rs2) & 0xFF
         self.emu.memory.write(self.emu.registers.read(rs1) + offset, value)
 
     def sh(self, offset, rs1, rs2):
+        offset = sext(offset, 11)
         value = self.emu.registers.read(rs2) & 0xFFFF
         self.emu.memory.write(self.emu.registers.read(rs1) + offset, value)
     
     def sw(self, offset, rs1, rs2):
+        offset = sext(offset, 11)
         value = self.emu.registers.read(rs2) & 0xFFFFFFFF
         self.emu.memory.write(self.emu.registers.read(rs1) + offset, value)
     #sext
     def jal(self, rd, offset):
+    #need to work and below
         self.emu.registers.write(rd, self.emu.pc + 4)
         self.emu.pc += offset
 

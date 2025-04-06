@@ -14,7 +14,7 @@ class Registers:
             return
         if not (0 <= reg_num < 32):
             raise ValueError("Register number out of range")
-        self.__registers[reg_num] = value
+        self.__registers[reg_num] = value & 0xFFFF_FFFF
 
     def __repr__(self):
         return f"RegisterFile({self.registers})"
@@ -23,3 +23,9 @@ class Registers:
         keyarr = list(map(lambda x: 'X' + str(x), self.__registers.keys()))
         reg = dict(zip(keyarr, self.__registers.values()))
         return f'Registers list:\n{reg}'
+    
+    def __setitem__(self, key:int, value: int):
+        self.write(key, value)
+
+    def __getitem__(self, key:int):
+        return self.read(key)

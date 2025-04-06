@@ -8,9 +8,9 @@ class Decoder:
     def __init__(self, emu: riscv_emu.RISCVEmu):
         self.emu = emu
     
-    def decode(self, instruction: hex):
+    def decode(self, instruction:int):
         opcode = (instruction >> 2) & 0x1F # код операции 6-2
-        print('in decode method', instruction, hex(instruction >> 2), hex(opcode))
+        #print('in decode method', instruction, hex(instruction >> 2), hex(opcode))
         match opcode:
             case 0x0D: # lui
                 rd = (instruction >> 7) & 0x1F 
@@ -26,12 +26,12 @@ class Decoder:
                 rs1 = (instruction >> 15) & 0x1F
                 imm = (instruction >> 20)
                 match funct3:
-                    case 0x00: return {'type': 'addi', 'rd': rd, 'rs1': rs1} # сложить rs1 с знаковым расширеным числом
-                    case 0x02: return {'type': 'slti', 'rd': rd, 'rs1': rs1} # сравнение rs1 со знаковым расширеным числом
-                    case 0x03: return {'type': 'sltui', 'rd': rd, 'rs1': rs1} # сравнение rs1 с беззнаковым расширеным числом
-                    case 0x04: return {'type': 'xori', 'rd': rd, 'rs1': rs1} # xor 
-                    case 0x06: return {'type': 'ori', 'rd': rd, 'rs1': rs1} # or
-                    case 0x07: return {'type': 'andi', 'rd': rd, 'rs1': rs1} # and
+                    case 0x00: return {'type': 'addi', 'rd': rd, 'rs1': rs1, 'imm': imm} # сложить rs1 с знаковым расширеным числом
+                    case 0x02: return {'type': 'slti', 'rd': rd, 'rs1': rs1, 'imm': imm} # сравнение rs1 со знаковым расширеным числом
+                    case 0x03: return {'type': 'sltui', 'rd': rd, 'rs1': rs1, 'imm': imm} # сравнение rs1 с беззнаковым расширеным числом
+                    case 0x04: return {'type': 'xori', 'rd': rd, 'rs1': rs1, 'imm': imm} # xor 
+                    case 0x06: return {'type': 'ori', 'rd': rd, 'rs1': rs1, 'imm': imm} # or
+                    case 0x07: return {'type': 'andi', 'rd': rd, 'rs1': rs1, 'imm': imm} # and
                     case 0x01: # левый логический сдвиг
                         shamt = (instruction >> 20) & 0x1F # кол-во бит сдвига
                         return {'type': 'slli', 'rd': rd, 'rs1': rs1, 'shamt': shamt}
@@ -87,7 +87,7 @@ class Decoder:
                     case 0b01:
                         match funct3:
                             case 0b111:
-                                print('decode remu')
+                                #print('decode remu')
                                 return {'type': 'remu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
 
 
@@ -162,15 +162,15 @@ class Decoder:
                 offset = (instruction >> 20)
                 match funct3:
                     case 0b000: # Загрузить 8-битное число из памяти и знаково расширить
-                        return {'type': 'lb', 'rd': rd, 'rs1': rs1}
+                        return {'type': 'lb', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b001: # Загрузить 16-битное число из памяти и знакого расширить
-                        return {'type': 'lh', 'rd': rd, 'rs1': rs1}
+                        return {'type': 'lh', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b010: # Загрузить 32-битное число из памяти и знакого расширить
-                        return {'type': 'lW', 'rd': rd, 'rs1': rs1}
+                        return {'type': 'lW', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b100: # Загрузить 8-битное число из памяти и расширить нулями
-                        return {'type': 'lbu', 'rd': rd, 'rs1': rs1}
+                        return {'type': 'lbu', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b101: # Загрузить 16-битное число из памяти и расширить нулями
-                        return {'type': 'lhu', 'rd': rd, 'rs1': rs1}
+                        return {'type': 'lhu', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case _: raise Exception(f'Unknown funct3 in 0x00: {hex(funct3)}')
 
             case 0x08:
@@ -202,8 +202,8 @@ class Decoder:
             
             case 0x18:
                 funct3 = (instruction >> 12) & 0x07
-                offset = ((instruction >> 31) << 11) | ((instruction >> 25) & 0x3F) << 4 | \
-                        ((instruction >> 8) & 0x0F) | ((instruction >> 7) & 0x01) << 10
+                offset = (((instruction >> 31) << 11) | ((instruction >> 25) & 0x3F) << 4 | \
+                        ((instruction >> 8) & 0x0F) | ((instruction >> 7) & 0x01) << 10) << 1
                 rs1 = (instruction >> 15) & 0x1F
                 rs2 = (instruction >> 20) & 0x1F
                 match funct3: 
@@ -225,7 +225,7 @@ class Decoder:
                 raise Exception(f'Unknown pd: {hex(opcode)}')
 
 
-    def execute_instruction(self, instruction):
+    def execute_instruction(self, instruction) -> None:
         decoded = self.decode(instruction)
         match decoded['type']:
             case 'lui':
@@ -257,7 +257,7 @@ class Decoder:
             case 'ecall':
                 self.emu.instructions.ecall()
             case 'beq':
-                print('called beq')
+                #print('called beq')
                 self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
             case 'add':
                 self.emu.instructions.add(decoded['rd'], decoded['rs1'], decoded['rs2'])
@@ -342,6 +342,8 @@ class Decoder:
             case 'bgeu':
                 self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'])
             case 'remu':
-                print('call remu')
+                #print('call remu')
                 self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])
             case _ as t: raise Exception(f'Unknown decoded[type] = {t}')
+
+

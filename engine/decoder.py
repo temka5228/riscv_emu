@@ -189,8 +189,8 @@ class Decoder:
                         raise Exception(f'Unknown funct3 in 0x08: {hex(funct3)}')
             
             case 0x1B: # Jump to address and place return address in rd.
-                offset = ((instruction >> 31) << 20) | ((instruction >> 21) & 0x3FF) | \
-                        ((instruction >> 20) & 0x01) << 10 | ((instruction >> 12) & 0xFF) << 11
+                offset = (((instruction >> 31) << 19) | ((instruction >> 21) & 0x3FF) << 1| \
+                        ((instruction >> 20) & 0x01) << 10 | ((instruction >> 12) & 0xFF) << 11)
                 rd = (instruction >> 7) & 0x1F
                 return {'type': 'jal', 'offset': offset}
             

@@ -1,0 +1,14 @@
+{
+  "name": "interface_risc_v",
+  "author": "Lazarev Artem",
+  "main": "interface/js/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^35.1.4"
+  },
+  "dependencies": {
+    "@flaticon/flaticon-uicons": "^3.3.1"
+  }
+}

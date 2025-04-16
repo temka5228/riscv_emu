@@ -14,10 +14,10 @@ class Registers:
             return
         if not (0 <= reg_num < 32):
             raise ValueError("Register number out of range")
-        self.__registers[reg_num] = value & 0xFFFF_FFFF
+        self.__registers[reg_num] = value
 
     def __repr__(self):
-        return f"RegisterFile({self.registers})"
+        return f"RegisterFile({self.__registers})"
     
     def __str__(self):
         keyarr = list(map(lambda x: 'X' + str(x), self.__registers.keys()))

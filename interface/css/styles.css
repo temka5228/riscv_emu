@@ -1,0 +1,341 @@
+:root {
+    --background-color: #202225;
+    --sidebar-color: #202225;
+    --substrate-color: #292b2f;
+    --button-color: #1cb955; /*#7289da;*/
+    --button-hover-color: #2f9c51; /*#51629c;*/
+    --button-active-color: #2d7d46;
+    --console-table-color: #37393f;
+    --font-color: #eaeaeb;
+    --tr-td-color: #9da1a4;
+}
+
+
+html {
+    height: 100%;
+    overflow-y: hidden;
+}
+
+body {
+    font-family: 'Lucida Console';
+    display: grid;
+    grid-template-rows: 0fr 1fr;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #1e1e1e;
+    color: #f5f5f5;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: 10px;
+
+}
+
+.titlebar-container {
+    -webkit-app-region: drag;
+    height:32px;
+    width: 100%;
+    display:flex;
+    background-color: var(--background-color);
+    color: white;/*var(--background-color);*/
+    align-items: center;
+    justify-content: center;
+}
+
+.titlebar-container p{
+    font-size: large;
+    font-family: 'Segoe UI';
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 0fr 1fr;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 60px;
+    display: grid;
+    background-color: var(--background-color);
+    /*border-right: 1px solid #fcfcfc;*/
+    /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);*/
+    padding: 5px;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 5px 5px 5px 0px;
+    background-color: var(--background-color);
+    box-sizing:border-box;
+    height: 100%;
+    overflow: hidden;
+}
+
+
+
+.button-main {
+    align-self: self-start;
+}
+
+.button-settings {
+    align-self: self-end;
+}
+
+.tab-content {
+    display: none;
+    height: 100%;
+    overflow: hidden;
+}
+
+.substrate {
+    display: grid;
+    grid-template-columns: 1fr 0fr;
+    padding: 10px;
+    background-color: var(--substrate-color);
+    border-radius: 10px;
+    box-sizing: border-box;
+    height: 100%;
+    overflow: hidden;
+}
+
+.left-half {
+    display: grid;
+    grid-template-rows: 0fr 1fr;
+    /*width:max-content;*/
+    flex-direction: column;
+    padding-right: 10px;
+    overflow-y: auto;
+    border-radius: 0px;
+    box-sizing: border-box;
+}
+
+.control-buttons {
+    display: grid;
+    grid-template-columns: 1fr repeat(3, 0fr);
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-radius: 0px;
+}
+
+.control-buttons button {
+    width: fit-content;
+}
+
+.editor-section {
+    display: grid;
+    flex-grow: 2;
+    box-sizing: border-box;
+
+}
+
+.editor {
+    flex-grow: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    box-sizing: border-box;
+    
+}
+
+.code-editor, .output-console {
+    display: flex;
+    flex:2;
+    padding: 15px;
+    background-color: var(--console-table-color);
+    border: none;
+    color: var(--font-color);
+    white-space: pre-wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+[contenteditable] {
+    outline: 0px solid transparent;
+}
+
+.code-editor{
+    border-radius: 10px 0px 0px 10px
+
+}
+
+.output-console {
+    border-left: 1px solid #4a4a4a;
+    border-radius: 0px 10px 10px 0px
+}
+.table-section {
+    /*border-radius: 8px;*/
+    display: grid;
+    grid-template-rows: 0fr 1fr;
+    min-width: 200px;
+    max-width: 400px;
+    /*background-color: #282c34;*/
+    /*border-left: 1px solid #4a4a4a;*/
+    /*padding: 15px;*/
+    box-sizing: border-box;
+    height: 100%;
+    overflow: hidden;
+}
+
+.switcher-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content:center;   
+    margin-bottom: 10px;
+    background-color: var(--substrate-color);
+    border-radius: 8px;
+
+}
+
+.table-btn {
+    transition: 0.3s;
+}
+
+.table-btn.active {
+    z-index: 2;
+    background-color: var(--button-active-color);
+}
+#memory-btn.active {
+    transform: scaleX(1.10) translateX(5%);
+}
+
+#register-btn.active {
+    transform: scaleX(1.10) translateX(-5%);
+}
+
+
+.table-container{
+    background-color: var(--console-table-color);
+    gap: 10px;
+    padding: 0px;
+    border-radius: 8px;
+    overflow-y:scroll;
+    box-sizing: border-box;
+    height: 100%;
+}
+
+.table {
+    width: 100%;
+    color: var(--font-color);
+    white-space: pre-wrap;
+    border-collapse: collapse;
+    box-sizing: border-box;
+}
+
+.table td {
+    border-right: 1px solid var(--tr-td-color);
+    border-collapse: collapse;
+    text-align: center;
+    width: 25%;
+}
+
+.table tr {
+    border-top: 1px solid var(--tr-td-color);
+}
+
+.table tr td:last-child, .table-container tr th:last-child{
+    border-right: none;
+}
+
+.table tr:first-child {
+    border-top: none;
+}
+
+
+.tab-content.active {
+    display: block;
+}
+
+h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+input[type="text"] {
+    padding: 5px;
+    flex-grow: 1;
+    border: none;
+    background-color: #282c34;
+    color: #f5f5f5;
+    outline: none;
+}
+
+input[type="text"]:focus {
+    box-shadow: inset 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+button {
+    background-color:  var(--button-color);
+    color: #f5f5f5;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.3s, transform 0.2s;
+    font: 100% 'Segoe UI';
+}
+
+button.start, button.pause, button.stop{
+    background-color: #0000;
+}
+
+button.start:hover, button.pause:hover, button.stop:hover{
+    background-color: #0000;
+}
+
+button.start {
+    padding: 0px;
+    fill: rgb(22, 196, 22);
+}
+
+button.start:hover {
+    fill: rgb(22, 158, 22);
+
+}
+
+button.pause {
+    padding: 0px;
+    fill: rgb(196, 196, 196);
+}
+
+button.pause:hover {
+    fill: rgb(158, 158, 158);
+
+}
+
+button.stop {
+    padding: 0px;
+    fill: rgb(196, 22, 22);
+}
+
+button.stop:hover {
+    fill: rgb(158, 22, 22);
+    background-color: #0000;
+}
+
+button:hover {
+    background-color: var(--button-hover-color);
+    transform: scale(1.);
+}
+
+.sidebar button.active {
+    background-color: var(--console-table-color);
+}
+
+.button-main, .button-settings {
+    height: 50px;
+    width: 50px;
+    fill:#1cb955;
+}
+
+.sidebar button {
+    width:60px;
+    height: 60px;
+    background-color: #0000;
+}
+
+.sidebar button:hover {
+    background-color: var(--console-table-color);
+}
+
+

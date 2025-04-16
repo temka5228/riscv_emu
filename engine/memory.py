@@ -1,5 +1,4 @@
 # memory.py
-import numpy as np
 
 class Memory:
     def __init__(self, size=4096):

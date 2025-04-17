@@ -6,10 +6,9 @@ class Memory:
 
     
     def read(self, address:int | slice) -> bytearray:
-        '''
-        if not (0 <= address < len(self.__memory)):
-            raise ValueError("Address out of range")
-        '''
+        if type(address) == slice:
+            if address.stop >= len(self.__memory):
+                raise ValueError("Address out of range")
         return self.__memory[address]
 
     def write(self, address, value):
@@ -18,6 +17,19 @@ class Memory:
             raise ValueError("Address out of range")'
         '''
         self.__memory[address] = value
+
+    def asDict(self):
+        result = {}
+        for i in range(0, len(self.__memory), 4):
+            chunk = self.__memory[i:i+4]
+            value = int.from_bytes(chunk, byteorder='little', signed=False)
+
+            start_addr = i
+            end_addr = i + 3
+            addr_key = f'0x{start_addr:04x}-0x{end_addr:04x}'
+
+            result[addr_key] = f'0x{value:08x}'
+        return result
 
     def __getitem__(self, key):
         return self.read(key)

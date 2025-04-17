@@ -17,42 +17,44 @@ document.addEventListener('DOMContentLoaded', () => {
     codeEditor.innerHTML = '// Your code here';
 
     // Обработчик загрузки файла
-    function readFile(file) {
+    async function readFile() {
         var f = uploader.files[0];
-        var reader = new FileReader();
-        var fileByteArray = [];
-        reader.onloadend = (evt) => {
-            var binaryString = evt.target.result;
-            console.log('try to start emulator')
-            window.riscvAPI.startEmulation(binaryString, 4)
-        };
-        reader.readAsBinaryString(f);
-
-        //const reader = new FileReader();
-        //reader.readAsArrayBuffer(f);
+        const arrayBuffer = await f.arrayBuffer();
+        const  base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        responseOk = await riscvAPI.loadFile(base64String, 4)
+        if (responseOk) {
+            responseText = await riscvAPI.decodeProgramm()
+            console.log(arrayBuffer)
+            outputConsole.innerHTML = responseText
+        }
     }
 
     uploader.addEventListener("change", readFile);
+
     uploadBtn.addEventListener('click', () => {
         uploader.click();
     });
-    // Обработчик для отправки запросов
     
-    runBtn.addEventListener('click', () => {
-        window.riscvAPI.startEmulation()
+    runBtn.addEventListener('click', async () => {
+        riscvAPI.startEmulation()
     })
 
     pauseBtn.addEventListener('click', () => {
-        window.riscvAPI.getState()
     })
 
     // Обработчик для переключения между таблицей памяти и таблицей регистров
-    memoryBtn.addEventListener('click', () => {
-        displayTable(memoryData);
+    memoryBtn.addEventListener('click', async () => {
+        responseMemory = await riscvAPI.getMemory();
+        registerBtn.classList.remove('active');
+        memoryBtn.classList.add('active');
+        tableContainer.innerHTML = jsonToTable(responseMemory)
     });
 
-    registerBtn.addEventListener('click', () => {
-        displayTable(registerData);
+    registerBtn.addEventListener('click', async () => {
+        responseRegisters = await riscvAPI.getRegisters();
+        memoryBtn.classList.remove('active');
+        registerBtn.classList.add('active');
+        tableContainer.innerHTML = jsonToTable(responseRegisters)
     });
 
 
@@ -66,57 +68,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    tableBtns.forEach(btn => {
-        btn.addEventListener('click', function(){
-            tableBtns.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            const tableId = this.getAttribute('data-table');
-            getTableById(tableId);
-        });
-    })
-
-    
-    // Пример данных для таблицы памяти (замените на реальные данные из эмулятора)
-    function getTableById(tableId){
-        console.log(tableId);
-        switch (tableId){
-            case "memory":
-                return memoryData;
-            case "register":
-                return registerData;
+    function jsonToTable(jsonData) {
+        let table = ''
+        for (const [key, value] of Object.entries(jsonData)) {
+            table += '<tr>';
+            table += `<td>${key}</td><td>${value}</td>`;
+            table += '</tr>';
         }
+        return table;
     }
-    const memoryData = generateTableData(62, 2, 'Memory Address');
-    const registerData = generateTableData(62, 2, 'Register');
-
-    // Функция для генерации таблицы данных
-    function generateTableData(rows, cols, header) {
-        let tableHtml = ''//`<h3><td>${header}</td><td>Value</td></h3><table>`;
-        for (let i = 0; i < rows; i++) {
-            tableHtml += '<tr>';
-            tableHtml += `<td>${header[0] + i}</td><td>${0}</td>`
-            tableHtml += '</tr>';
-        }
-        tableHtml += '</table>';
-        return tableHtml;
-    }
-
-    // Функция для отображения таблицы
-    function displayTable(data) {
-        tableContainer.innerHTML = data;
-    }
-
-    function openTab(tabID){
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        })
-        document.getElementById(tabID).classList.add('active');
-    }
-
 
     side_buttons[0].click();
-    //initTitleBar()
-
-    // Инициализация отображения по умолчанию (например, таблица памяти)
-    displayTable(memoryData);
+    registerBtn.click();
 });

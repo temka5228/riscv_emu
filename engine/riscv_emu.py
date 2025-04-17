@@ -14,6 +14,8 @@ class RISCVEmu:
         self.instructions = Instructions(self)
         self.decoder = Decoder(self)
         self.running = False
+        self.load_address = 0
+        self.len_file = 0
     
     def fetch(self):
         return self.memory.read(self.pc)
@@ -29,17 +31,24 @@ class RISCVEmu:
                 print(c)
                 self.running = False
 
-    def load_binary(self, filename, load_address = 0x0):
-        print(type(filename))
-        with open(filename, 'rb') as f:
-            binary_data = f.read()
-        self.memory[load_address: load_address + len(binary_data)] = binary_data
-        self.pc = load_address
-        #print(self.memory[14:18])
+    def load_binary(self, file, load_address=None):
+        if load_address:
+            self.load_address = load_address
+        self.len_file = len(file)
+        try:
+            self.memory[self.load_address: self.load_address + self.len_file] = file
+        except ValueError:
+            self.running = False
+        self.pc = self.load_address
         
     def fetch_instruction(self) -> int:
         self.pc &= 0xFFFF_FFFC
-        instr_bytes = self.memory[self.pc:self.pc + 4]
+        try:
+            instr_bytes = self.memory[self.pc:self.pc + 4]
+        except ValueError:
+            self.running = False
+            self.pc = 0
+            return 0x0
         instruction = int.from_bytes(instr_bytes, byteorder='little')
         print(f'instruction: {hex(instruction)}, programm counter: {self.pc}')
         self.pc += 4
@@ -48,6 +57,14 @@ class RISCVEmu:
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}
 
-    
-
+    def decode_programm(self):
+        pc = self.pc
+        res = ''
+        while pc < self.load_address + self.len_file:
+            decodedInstruction = self.decoder.decode(int.from_bytes(self.memory[pc: pc + 4], byteorder='little'))
+            for v in decodedInstruction.values():
+                res += f'{v} '
+            res += '<br/>'
+            pc += 4
+        return res
 

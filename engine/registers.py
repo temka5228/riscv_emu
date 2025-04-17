@@ -16,9 +16,12 @@ class Registers:
             raise ValueError("Register number out of range")
         self.__registers[reg_num] = value
 
+    def asDict(self):
+        return self.__registers
+    
     def __repr__(self):
         return f"RegisterFile({self.__registers})"
-    
+
     def __str__(self):
         keyarr = list(map(lambda x: 'X' + str(x), self.__registers.keys()))
         reg = dict(zip(keyarr, self.__registers.values()))

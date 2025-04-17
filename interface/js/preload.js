@@ -1,10 +1,20 @@
 const { contentBridge, ipcRenderer, contextBridge } = require('electron/renderer')
 
 contextBridge.exposeInMainWorld('riscvAPI', {
-    selectFile: () => ipcRenderer.invoke('select-file'),
-    startEmulation: (binaryString, startPosition) => {
-        console.log('int preload start emulator')
-        ipcRenderer.invoke('start-emulation', binaryString, startPosition)},
-    getState: () => fetch('http://localhost:8000/state').then(res => console.log(res.json()))
-
+    loadFile: async (binaryString, startPosition) => {
+        return await ipcRenderer.invoke('load-file', binaryString, startPosition)
+    },
+    startEmulation: async () => {
+       return await ipcRenderer.invoke('run')
+    },
+    //getState: () => fetch('http://localhost:8000/state').then(res => console.log(res.json())),
+    getRegisters: async () => {
+        return await ipcRenderer.invoke('get-registers')
+    },
+    getMemory: async () => {
+        return await ipcRenderer.invoke('get-memory')
+    },
+    decodeProgramm: async () => {
+        return await ipcRenderer.invoke('decode')
+    }
 })

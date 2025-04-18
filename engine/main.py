@@ -11,16 +11,23 @@ riscv = RISCVEmu()
 
 class File(BaseModel):
     file_path: str
-    address: int
 
 @app.post("/load/")
-#def load_file(argv):
 async def load_file(file: File):
     print('in python func load file', file.file_path)
     programm = bytearray(base64.b64decode(file.file_path))
-    riscv.load_binary(programm, file.address)
+    riscv.load_binary(programm)
     return {"status": "completed"}
 
+@app.post('/set-address')
+def set_address(address:int):
+    riscv.set_address(address)
+    return {"status": "completed"}
+
+@app.post('/set-memory')
+def set_memory_size(size:int):
+    riscv.set_memory_size(size)
+    return {"status": "completed"}
 
 @app.post('/start')
 def run():
@@ -30,7 +37,7 @@ def run():
 @app.get('/decode')
 def decode():
     res = riscv.decode_programm()
-    return PlainTextResponse(res)
+    return JSONResponse(res)
 
 @app.get("/state")
 def get_state():

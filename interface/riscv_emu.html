@@ -52,29 +52,35 @@
                     <div class="left-half">
                         <div class="control-buttons">
                             <button id="button-upload" >Upload...</button>
+                            <label id="file-name"></label>
                             <input class="form-upload" id="uploadFile" type="file" name="file_name" style="display:none">
                             <!--<button class="upload" id="button-upload">Upload...</button>-->
-                            <button class="start" id="button-start">
-                                <svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="20" height="20">
-                                    <path d="M20.492,7.969,10.954.975A5,5,0,0,0,3,5.005V19a4.994,4.994,0,0,0,7.954,4.03l9.538-6.994a5,5,0,0,0,0-8.062Z"/>
-                                </svg>
-                            </button>
-                            <button class="pause" id="button-pause">
-                                <svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="20" height="20">
-                                    <path d="M6.5,0A3.5,3.5,0,0,0,3,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,6.5,0Z"/><path d="M17.5,0A3.5,3.5,0,0,0,14,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,17.5,0Z"/>
-                                </svg>
-                            </button>
-                            <button class="stop" id="button-stop">
-                                <svg xmlns="http://www.w3.org/2000/svg"  version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve" width="20" height="20">
-                                    <path d="M106.667,0h298.667C464.244,0,512,47.756,512,106.667v298.667C512,464.244,464.244,512,405.333,512H106.667  C47.756,512,0,464.244,0,405.333V106.667C0,47.756,47.756,0,106.667,0z"/>
-                                </svg>
-                            </button>
+                            <div class="start-stop-buttons">
+                                <button class="start" id="button-start">
+                                    <svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="20" height="20">
+                                        <path d="M20.492,7.969,10.954.975A5,5,0,0,0,3,5.005V19a4.994,4.994,0,0,0,7.954,4.03l9.538-6.994a5,5,0,0,0,0-8.062Z"/>
+                                    </svg>
+                                </button>
+                                <button class="pause" id="button-pause">
+                                    <svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="20" height="20">
+                                        <path d="M6.5,0A3.5,3.5,0,0,0,3,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,6.5,0Z"/><path d="M17.5,0A3.5,3.5,0,0,0,14,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,17.5,0Z"/>
+                                    </svg>
+                                </button>
+                                <button class="stop" id="button-stop">
+                                    <svg xmlns="http://www.w3.org/2000/svg"  version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve" width="20" height="20">
+                                        <path d="M106.667,0h298.667C464.244,0,512,47.756,512,106.667v298.667C512,464.244,464.244,512,405.333,512H106.667  C47.756,512,0,464.244,0,405.333V106.667C0,47.756,47.756,0,106.667,0z"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="editor-section">
                             <div class="editor">
-                                <div class="code-editor" id="code-editor" contenteditable="true"></div>
+                                <div class="code-editor" id="code-editor" contenteditable="false"></div>
                                 <div class="output-console" id="output-console"></div>
+                            </div>
+                            <div class="console" id="console">
+                                
                             </div>
                         </div>
                     </div>
@@ -95,7 +101,21 @@
             </div>
             <div id="settings" class="tab-content">
                 <div class="substrate">
-                    <h1>SETTINGS</h1>
+                    <div>
+                        <h1>SETTINGS</h1>
+                    </div>
+                    <div>
+                        <label for="ml-checkbox">ML branch prediction</label>
+                        <input type="checkbox" id="ml-checkbox" name="ml-checkbox">
+                    </div>
+                    <div>
+                        <label for="memory-address">Memory address of the beginning of the program:</label>
+                        <input type="number" id="memory-address" name="memory-address" min="0" max="4096" value="4"/>
+                    </div>
+                    <div>
+                        <label for="memory-size">Memory size in bytes: </label>
+                        <input type="number" id="memory-size" name="memory-size" min="64" max="4096" value="4096">
+                    </div>
                 </div>
             </div>
         </div>

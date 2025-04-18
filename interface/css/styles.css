@@ -10,6 +10,26 @@
     --tr-td-color: #9da1a4;
 }
 
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+    margin: 1px 0;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(100,100,100,0.5);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100,100,100,0.7);
+}
+
 
 html {
     height: 100%;
@@ -17,7 +37,7 @@ html {
 }
 
 body {
-    font-family: 'Lucida Console';
+    font-family: 'Segoe UI';
     display: grid;
     grid-template-rows: 0fr 1fr;
     margin: 0;
@@ -27,8 +47,6 @@ body {
     height: 100%;
     box-sizing: border-box;
     overflow: hidden;
-    border-radius: 10px;
-
 }
 
 .titlebar-container {
@@ -60,12 +78,12 @@ body {
     background-color: var(--background-color);
     /*border-right: 1px solid #fcfcfc;*/
     /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);*/
-    padding: 5px;
+    padding: 0px 5px 5px 5px;
 }
 
 .main-content {
     flex-grow: 1;
-    padding: 5px 5px 5px 0px;
+    padding: 0px 5px 5px 0px;
     background-color: var(--background-color);
     box-sizing:border-box;
     height: 100%;
@@ -103,31 +121,45 @@ body {
     display: grid;
     grid-template-rows: 0fr 1fr;
     /*width:max-content;*/
-    flex-direction: column;
     padding-right: 10px;
-    overflow-y: auto;
+    overflow-y: hidden;
     border-radius: 0px;
     box-sizing: border-box;
 }
 
 .control-buttons {
     display: grid;
-    grid-template-columns: 1fr repeat(3, 0fr);
+    grid-template-columns: 0fr 1fr 0fr;
     justify-content: space-between;
     gap: 10px;
     padding-bottom: 10px;
     border-radius: 0px;
 }
 
+.control-buttons label{
+    font-family: 'Segoe UI';
+    font-size: 14px;
+    text-align: center;
+    align-self: center;
+}
+.start-stop-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 0fr);
+    justify-content: space-between;
+    gap: 10px;
+}
+
 .control-buttons button {
     width: fit-content;
+    height: 30;
+    padding: 5px 10px;
 }
 
 .editor-section {
     display: grid;
-    flex-grow: 2;
+    grid-template-rows: 1fr 0fr;
     box-sizing: border-box;
-
+    overflow-y: hidden;
 }
 
 .editor {
@@ -135,7 +167,9 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     box-sizing: border-box;
-    
+    font-family: monospace;
+    font-size: 14px;
+    overflow-y: overlay;
 }
 
 .code-editor, .output-console {
@@ -156,23 +190,32 @@ body {
 }
 
 .code-editor{
-    border-radius: 10px 0px 0px 10px
+    border-radius: 8px 0px 0px 8px
 
 }
 
 .output-console {
     border-left: 1px solid #4a4a4a;
-    border-radius: 0px 10px 10px 0px
+    border-radius: 0px 8px 8px 0px
 }
+
+.console {
+    background-color: var(--console-table-color);
+    border-radius: 8px;
+    margin-top: 10px;
+    padding: 10px;
+    font-family: monospace;
+    overflow-y: overlay;
+    word-break: break-all;
+    height: 150px;
+}
+
 .table-section {
     /*border-radius: 8px;*/
     display: grid;
     grid-template-rows: 0fr 1fr;
-    min-width: 200px;
-    max-width: 400px;
-    /*background-color: #282c34;*/
-    /*border-left: 1px solid #4a4a4a;*/
-    /*padding: 15px;*/
+    min-width: 250px;
+    max-width: 250px;
     box-sizing: border-box;
     height: 100%;
     overflow: hidden;
@@ -190,6 +233,7 @@ body {
 
 .table-btn {
     transition: 0.3s;
+    padding: 5px 10px;
 }
 
 .table-btn.active {
@@ -210,7 +254,7 @@ body {
     gap: 10px;
     padding: 0px;
     border-radius: 8px;
-    overflow-y:scroll;
+    overflow-y: overlay;
     box-sizing: border-box;
     height: 100%;
 }
@@ -221,6 +265,9 @@ body {
     white-space: pre-wrap;
     border-collapse: collapse;
     box-sizing: border-box;
+    font-family: monospace;
+    word-break: normal;
+    font-size: 12px;
 }
 
 .table td {
@@ -338,4 +385,37 @@ button:hover {
     background-color: var(--console-table-color);
 }
 
+#settings .substrate {
+    display: grid;
+    grid-template-columns:1fr;
+    grid-template-rows: 0fr;
+    align-content:flex-start;
+    font-family: 'Segoe UI';
 
+}
+
+#settings .substrate div{
+    display: grid;
+    grid-template-columns: 1fr 0fr;
+    width: 1fr;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+#settings .substrate div input {
+    background-color: var(--substrate-color);
+    color: var(--font-color);
+    border-radius: 3px;
+    border-width: 1px;
+    border-color: var(--tr-td-color);
+    border-style: solid;
+    width: 50px;
+    font-family: 'Segoue UI';
+    font-size: 14px;
+    text-align: center;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}

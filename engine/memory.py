@@ -30,6 +30,15 @@ class Memory:
 
             result[addr_key] = f'0x{value:08x}'
         return result
+    
+    def set_size(self, new_size):
+        size = len(self.__memory)
+        if new_size > size:
+            self.__memory.extend(bytearray(new_size - size))
+        elif new_size == size:
+            pass
+        else:
+            self.__memory = self.__memory[0:new_size]
 
     def __getitem__(self, key):
         return self.read(key)

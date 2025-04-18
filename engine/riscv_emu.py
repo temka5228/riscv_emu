@@ -21,7 +21,6 @@ class RISCVEmu:
         return self.memory.read(self.pc)
     
     def run(self) -> None:
-        #self.load_binary(filename, load_address)
         self.running = True
         while self.running:
             try:
@@ -31,9 +30,7 @@ class RISCVEmu:
                 print(c)
                 self.running = False
 
-    def load_binary(self, file, load_address=None):
-        if load_address:
-            self.load_address = load_address
+    def load_binary(self, file):
         self.len_file = len(file)
         try:
             self.memory[self.load_address: self.load_address + self.len_file] = file
@@ -59,12 +56,22 @@ class RISCVEmu:
 
     def decode_programm(self):
         pc = self.pc
-        res = ''
+        json_res = {'bytes': '', 'decoded': ''}
         while pc < self.load_address + self.len_file:
-            decodedInstruction = self.decoder.decode(int.from_bytes(self.memory[pc: pc + 4], byteorder='little'))
+            command = int.from_bytes(self.memory[pc:pc+4], byteorder='little')
+            decodedInstruction = self.decoder.decode(command)
             for v in decodedInstruction.values():
-                res += f'{v} '
-            res += '<br/>'
+                json_res['decoded'] += f'{v} '
+            json_res['decoded'] += '<br/>'
+            json_res['bytes'] += f'0x{command:08x}<br/>'
             pc += 4
-        return res
+        return json_res
+    
+    def set_address(self, address):
+        if address >= 0:
+            self.load_address = address
+
+    def set_memory_size(self, size):
+        self.memory.set_size(size)
+        
 

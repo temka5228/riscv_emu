@@ -5,6 +5,7 @@ const path = require('path')
 const execFile = require('child_process').execFile
 const fs = require('fs')
 const waitPort = require('wait-port')
+const { ipcRenderer } = require('electron')
 
 const INDEX_PATH = path.join(__dirname, '../riscv_emu.html')
 const HOST = 'localhost'
@@ -17,23 +18,29 @@ const startPythonBackend = () => {
   pythonExecutable = path.join(venvPath, 'Scripts', 'python.exe')
 
   const pythonProcess = spawn(pythonExecutable, [pythonSciptPath])
-
-  pythonProcess.stdout.on('data', (data) => {
-    console.log(`Python: ${data}`);
-  })
-
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`Python Error ${data}`)
-  })
-
-  pythonProcess.on('error', (err) => {
-    console.error('Failed to start python:', err);
-  })
-
-  pythonProcess.on('close', (code) => {
-    console.log(`Python closed with code ${code}`)
-  })
   return pythonProcess
+}
+
+function pythonConsole() {
+  pyProcess.stdout.on('data', (data) => {
+    console.log(`Python: ${data}`);
+    window.webContents.send('console-output', data.toString())
+  })
+
+  pyProcess.stderr.on('data', (data) => {
+    console.error(`Python Error ${data}`)
+    window.webContents.send('console-output', data.toString())
+  })
+
+  pyProcess.on('error', (err) => {
+    console.error('Failed to start python:', err);
+    window.webContents.send('console-output', data.toString())
+  })
+
+  pyProcess.on('close', (code) => {
+    console.log(`Python closed with code ${code}`)
+    window.webContents.send('console-output', data.toString())
+  })
 }
 
 
@@ -57,8 +64,10 @@ async function createWindow () {
   })
 
   // LOAD .HTML FILE AND OPEN DEV TOOLS
-  await win.loadFile(INDEX_PATH)
-  await win.webContents.openDevTools()
+  await win.loadFile(INDEX_PATH);
+  await win.webContents.openDevTools();
+
+  return win
 }
 
 // CREATING HANDLERS
@@ -70,13 +79,12 @@ function createHandlers() {
     return await response.json()
   })
 
-  ipcMain.handle('load-file', async (_, binaryString, startPosition) => {
+  ipcMain.handle('load-file', async (_, binaryString) => {
     response = await fetch(URL + '/load/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        file_path: binaryString,
-        address: startPosition
+        file_path: binaryString
       })
     })
     return await response.ok
@@ -94,9 +102,30 @@ function createHandlers() {
 
   ipcMain.handle('decode', async () => {
     response = await fetch(URL + '/decode')
-    return await response.text()
+    return await response.json()
   })
   
+  ipcMain.handle('set-address', async (_, address) => {
+    response = await fetch(URL + '/set-address', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        start_address: address
+      })
+    })
+    return await response.json()
+  })
+  
+  ipcMain.handle('set-memory', async (_, size) => {
+    response = await fetch(URL + '/set-memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        size: size
+      })
+    })
+    return await response.json()
+  })
 }
 
 // STARTUP AND SHUTDOWN
@@ -105,7 +134,8 @@ app.whenReady().then(async () => {
     pyProcess = startPythonBackend()
     await waitPort({host: HOST, port: PORT})
     createHandlers();
-    await createWindow();
+    window = await createWindow();
+    pythonConsole();
   } catch (err) {
     console.error('error startup: ', err)
     app.quit();

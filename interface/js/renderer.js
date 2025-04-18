@@ -11,7 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploader = document.getElementById('uploadFile');
     const runBtn = document.getElementById('button-start');
     const pauseBtn = document.getElementById('button-pause');
-    
+    const memoryAddress = document.getElementById('memory-address');
+    const memorySize = document.getElementById('memory-size');
+    const fileName = document.getElementById('file-name');
+    const terminal = document.getElementById('console');
 
     // Инициализация редактора кода
     codeEditor.innerHTML = '// Your code here';
@@ -19,13 +22,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Обработчик загрузки файла
     async function readFile() {
         var f = uploader.files[0];
+        fname = uploader.value.split('\\').pop()
         const arrayBuffer = await f.arrayBuffer();
         const  base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        responseOk = await riscvAPI.loadFile(base64String, 4)
+        responseOk = await riscvAPI.loadFile(base64String);
         if (responseOk) {
-            responseText = await riscvAPI.decodeProgramm()
-            console.log(arrayBuffer)
-            outputConsole.innerHTML = responseText
+            responseJson = await riscvAPI.decodeProgramm();
+            updateTable();
+            fileName.innerText = fname;
+            codeEditor.innerHTML = responseJson['bytes'];
+            outputConsole.innerHTML = responseJson['decoded'];
         }
     }
 
@@ -36,10 +42,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     runBtn.addEventListener('click', async () => {
-        riscvAPI.startEmulation()
+        await riscvAPI.startEmulation();
+        updateTable();
     })
 
     pauseBtn.addEventListener('click', () => {
+    })
+
+    memorySize.addEventListener('change', () => {
+        memoryAddress.max = memorySize.value;
+
+    })
+
+    riscvAPI.onConsoleOutput((data) => {
+        console.log(data);
+        terminal.innerHTML += `${data}<br/>`;
+        terminal.scroll({
+            top: terminal.scrollHeight,
+            behavior:'smooth'
+        });
     })
 
     // Обработчик для переключения между таблицей памяти и таблицей регистров
@@ -78,6 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return table;
     }
 
+    async function updateTable() {
+        if (registerBtn.classList.contains('active')) {
+            responseRegisters = await riscvAPI.getRegisters();
+            tableContainer.innerHTML = jsonToTable(responseRegisters)
+        }
+        else {
+            responseMemory = await riscvAPI.getMemory();
+            tableContainer.innerHTML = jsonToTable(responseMemory);
+        }
+    }
     side_buttons[0].click();
     registerBtn.click();
 });

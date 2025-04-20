@@ -1,24 +1,38 @@
 const { app, BrowserWindow, ipcMain, dialog} = require('electron/main')
-const { spawn } = require('child_process')
+const { spawn, exec } = require('child_process')
 const { json } = require('stream/consumers')
 const path = require('path')
 const execFile = require('child_process').execFile
 const fs = require('fs')
 const waitPort = require('wait-port')
 const { ipcRenderer } = require('electron')
+const isDev = require('electron-is-dev')
 
 const INDEX_PATH = path.join(__dirname, '../riscv_emu.html')
 const HOST = 'localhost'
 const PORT = 8000
 const URL = `http://${HOST}:${PORT}`
 
-const startPythonBackend = () => {
-  const venvPath = path.join(__dirname, '../../.venv')
-  const pythonSciptPath = path.join(__dirname, '../../engine/main.py')
-  pythonExecutable = path.join(venvPath, 'Scripts', 'python.exe')
+const API_PROD_PATH = path.join(process.resourcesPath, '../../dist/riscv_emu.exe')
+const API_DEV_PATH = path.join(__dirname, "../../engine/main.py")
 
-  const pythonProcess = spawn(pythonExecutable, [pythonSciptPath])
-  return pythonProcess
+const startPythonBackend = () => {
+  if (isDev) {
+    try {
+      require('electron-reloader')(module)
+    } catch (_) {}
+    const venvPath = path.join(__dirname, '../../.venv')
+    pythonExecutable = path.join(venvPath, 'Scripts', 'python.exe')
+    const pythonProcess = spawn(pythonExecutable, [API_DEV_PATH])
+    return pythonProcess
+
+  } else {
+    const { pythonProcess } = execFile(API_PROD_PATH, {
+      windowsHide: true
+    })
+    return pythonProcess
+
+  }
 }
 
 function pythonConsole() {
@@ -39,7 +53,6 @@ function pythonConsole() {
 
   pyProcess.on('close', (code) => {
     console.log(`Python closed with code ${code}`)
-    window.webContents.send('console-output', data.toString())
   })
 }
 
@@ -69,6 +82,39 @@ async function createWindow () {
 
   return win
 }
+
+// STARTUP AND SHUTDOWN
+app.whenReady().then(async () => {
+  try {
+    pyProcess = startPythonBackend()
+    await waitPort({host: HOST, port: PORT})
+    createHandlers();
+    window = await createWindow();
+    pythonConsole();
+  } catch (err) {
+    console.error('error startup: ', err)
+    app.quit();
+  }
+  process.traceProcessWarnings = true
+})
+
+app.on('before-quit', () => {
+  if (isDev) {
+    pyProcess.kill()
+  } else {
+    execFile().kill("SIGINT")
+  }
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('uncaughtException', (err) => {
+  console.error('Uncaught Error:', err)
+})
 
 // CREATING HANDLERS
 function createHandlers() {
@@ -127,32 +173,3 @@ function createHandlers() {
     return await response.json()
   })
 }
-
-// STARTUP AND SHUTDOWN
-app.whenReady().then(async () => {
-  try {
-    pyProcess = startPythonBackend()
-    await waitPort({host: HOST, port: PORT})
-    createHandlers();
-    window = await createWindow();
-    pythonConsole();
-  } catch (err) {
-    console.error('error startup: ', err)
-    app.quit();
-  }
-  process.traceProcessWarnings = true
-})
-
-app.on('before-quit', () => {
-  pyProcess.kill()
-})
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('uncaughtException', (err) => {
-  console.error('Uncaught Error:', err)
-})

@@ -192,7 +192,7 @@ class Decoder:
                 offset = (((instruction >> 31) << 19) | ((instruction >> 21) & 0x3FF) << 1| \
                         ((instruction >> 20) & 0x01) << 10 | ((instruction >> 12) & 0xFF) << 11)
                 rd = (instruction >> 7) & 0x1F
-                return {'type': 'jal', 'offset': offset}
+                return {'type': 'jal', 'rd': rd, 'offset': offset}
             
             case 0x19: # Jump to address and place return address in rd
                 offset = (instruction >> 20)
@@ -225,13 +225,13 @@ class Decoder:
                 raise Exception(f'Unknown pd: {hex(opcode)}')
 
 
-    def execute_instruction(self, instruction) -> None:
+    def execute_instruction(self, instruction, pc) -> None:
         decoded = self.decode(instruction)
         match decoded['type']:
             case 'lui':
                 self.emu.instructions.lui(decoded['rd'], decoded['imm'])
             case 'auipc':
-                self.emu.instructions.auipc(decoded['rd'], decoded['imm'])
+                self.emu.instructions.auipc(decoded['rd'], decoded['imm'], pc)
             case 'addi':
                 self.emu.instructions.addi(decoded['rd'], decoded['rs1'], decoded['imm'])
             case 'slti':
@@ -256,9 +256,6 @@ class Decoder:
                 self.emu.instructions.sw(decoded['offset'], decoded['rs1'], decoded['rs2'])
             case 'ecall':
                 self.emu.instructions.ecall()
-            case 'beq':
-                #print('called beq')
-                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
             case 'add':
                 self.emu.instructions.add(decoded['rd'], decoded['rs1'], decoded['rs2'])
             case 'sub':
@@ -330,17 +327,17 @@ class Decoder:
             case 'jalr':
                 self.emu.instructions.jalr(decoded['rd'], decoded['rs1'], decoded['offset'])
             case 'beq':
-                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'bne':
-                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'blt':
-                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'bge':
-                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'bltu':
-                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'bgeu':
-                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'])
+                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
             case 'remu':
                 #print('call remu')
                 self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])

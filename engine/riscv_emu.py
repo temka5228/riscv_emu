@@ -3,6 +3,7 @@ from registers import Registers
 from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
+from predictor import GSharePredictor
 
 class RISCVEmu:
     def __init__(self, memory_size:int=4096):
@@ -16,21 +17,27 @@ class RISCVEmu:
         self.running = False
         self.load_address = 0
         self.len_file = 0
+
+        self.use_bp = False
+
+        self.bp = GSharePredictor(history_bits=8, bht_bits=10)
+        self.btb = {}
+        self.last_pred = None
     
     def fetch(self):
         return self.memory.read(self.pc)
     
     def run(self, address=None) -> None:
-        if address:
+        if address != None:
             self.pc = address
-            
+
         self.running = True
         while self.running:
             try:
-                instruction = self.fetch_instruction()
-                self.decoder.execute_instruction(instruction)
+                instruction, pc = self.fetch_instruction()
+                self.decoder.execute_instruction(instruction, pc)
             except Exception as c:
-                print(c)
+                print(f'exception ::: {c}')
                 self.running = False
 
     def load_binary(self, file):
@@ -43,16 +50,30 @@ class RISCVEmu:
         
     def fetch_instruction(self) -> int:
         self.pc &= 0xFFFF_FFFC
+        pc = self.pc
+
         try:
             instr_bytes = self.memory[self.pc:self.pc + 4]
+            instruction = int.from_bytes(instr_bytes, byteorder='little')
         except ValueError:
             self.running = False
             self.pc = 0
             return 0x0
-        instruction = int.from_bytes(instr_bytes, byteorder='little')
-        print(f'instruction: {hex(instruction)}, programm counter: {self.pc}')
-        self.pc += 4
-        return instruction
+        
+        if self.use_bp:
+            taken = self.bp.predict(pc)
+            if taken and pc in self.btb:
+                next_pc = self.btb[pc]
+            else:
+                next_pc = pc + 4
+            self.last_pred = (pc, taken, next_pc)
+            self.pc = next_pc
+        else:
+            self.pc += 4
+        
+        #print(f'instruction: {hex(instruction)}, programm counter: {self.pc}')
+        #self.pc += 4
+        return instruction, pc
     
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}
@@ -76,5 +97,9 @@ class RISCVEmu:
 
     def set_memory_size(self, size):
         self.memory.set_size(size)
+
+    def clear_registers(self):
+        del self.registers
+        self.registers = Registers()
         
 

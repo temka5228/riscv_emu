@@ -27,12 +27,12 @@ class Instructions:
         imm = sextToInt(imm << 12, 31)
         self.emu.registers[rd] = imm
     
-    def auipc(self, rd, imm):
+    def auipc(self, rd, imm, pc):
         '''Build pc-relative addresses and uses the U-type format. 
         AUIPC forms a 32-bit offset from the 20-bit U-immediate, 
         filling in the lowest 12 bits with zeros, adds this offset to the pc, 
         then places the result in register rd.'''
-        value = self.emu.memory[self.emu.pc] + sextToInt(imm << 12, 31)
+        value = self.emu.memory[pc] + sextToInt(imm << 12, 31)
         self.emu.registers[rd] = value
 
     def addi(self, rd, rs1, imm):
@@ -103,11 +103,6 @@ class Instructions:
         # Simple system call: print the value in x10
         value = self.emu.registers[10]
         print(f"Value in x10: {value}")
-
-    def beq(self, rs1, rs2, offset):
-        if self.emu.registers[rs1] == self.emu.registers[rs2]:
-            offset = sextToInt(offset, 12)
-            self.emu.pc += offset - 4
 
 
     def add(self, rd, rs1, rs2):
@@ -290,36 +285,122 @@ class Instructions:
     #sext
     def jal(self, rd, offset):
         self.emu.registers[rd] = self.emu.pc + 4
-        self.emu.pc += sextToInt(offset, 19)
+        offset = sextToInt(offset, 19)
+        self.emu.pc += offset - 4
 
     def jalr(self, rd, rs1, offset):
         value = self.emu.pc + 4
-        self.emu.pc = (self.emu.registers[rs1] + sextToInt(offset, 11)) & ~1
+        self.emu.pc = (self.emu.registers[rs1] + sextToInt(offset, 11)) & ~1 - 4
         self.emu.registers[rd] = value
 
-    def bne(self, rs1, rs2, offset):
-        if self.emu.registers[rs1] != self.emu.registers[rs2]:
-            self.emu.pc += sextToInt(offset, 12)
+    def beq(self, rs1, rs2, offset, pc):
+        #if self.emu.registers[rs1] == self.emu.registers[rs2]:
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            if pred_taken != taken or (taken and pred_next != target):
+                #print('Промах')
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
+        #pc += offset - 4
+
+    def bne(self, rs1, rs2, offset, pc):
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (self.emu.registers[rs1] != self.emu.registers[rs2])
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            if pred_taken != taken or (taken and pred_next != target):
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
     
-    def blt(self, rs1, rs2, offset):
-        if self.emu.registers[rs1] < self.emu.registers[rs2]:
-            self.emu.pc += sextToInt(offset, 12)
+    def blt(self, rs1, rs2, offset, pc):
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (self.emu.registers[rs1] < self.emu.registers[rs2])
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            if pred_taken != taken or (taken and pred_next != target):
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
     #sext offset and up
-    def bge(self, rs1, rs2, offset):
-        if self.emu.registers[rs1] >= self.emu.registers[rs2]:
-            self.emu.pc += sextToInt(offset, 12)
+    def bge(self, rs1, rs2, offset, pc):
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (self.emu.registers[rs1] >= self.emu.registers[rs2])
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            if pred_taken != taken or (taken and pred_next != target):
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
     #unsigned
-    def bltu(self, rs1, rs2, offset):
-        if abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]):
-            self.emu.pc += sextToInt(offset, 12)
+    def bltu(self, rs1, rs2, offset, pc):
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]))
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            if pred_taken != taken or (taken and pred_next != target):
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
     #unsigned
-    def bgeu(self, rs1, rs2, offset):
-        if abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]):
-            self.emu.pc += sextToInt(offset, 12)
+    def bgeu(self, rs1, rs2, offset, pc):
+        offset = sextToInt(offset, 12)
+        target = pc + offset
+        taken = (abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]))
+        if self.emu.use_bp:
+            self.emu.btb[pc] = target
+            last_pc, pred_taken, pred_next = self.emu.last_pred
+            assert last_pc == pc, "Нарушена связь fetch - execute"
+
+            #Если промах -> откатываемся
+            if pred_taken != taken or (taken and pred_next != target):
+                self.emu.pc = target if taken else pc + 4
+            
+            self.emu.bp.update(pc, taken)
+        else: 
+            if taken:
+                self.emu.pc = target
 
     """    R32M INSTRUCTIONS    """
 
     def remu(self, rs1, rs2, rd):
-        print('execute remu')
         value = self.emu.registers[rs1] % self.emu.registers[rs2]
         self.emu.registers[rd] = value

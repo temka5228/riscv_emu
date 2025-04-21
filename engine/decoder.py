@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import riscv_emu
-    import instructions
 
 class Decoder:
     def __init__(self, emu: riscv_emu.RISCVEmu):
@@ -90,7 +89,6 @@ class Decoder:
                                 #print('decode remu')
                                 return {'type': 'remu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
 
-
             case 0x03:
                 funct3 = (instruction >> 12) & 0x07
                 match funct3: # fence (pred, succ)
@@ -115,19 +113,10 @@ class Decoder:
                     case 0b011: #atomic read and clear bits in CSR
                         return {'type': 'csrrc', 'rd': rd, 'rs1': rs1, 'csr': csr}
                     case 0b101: 
-                        """Update the CSR using an XLEN-bit value obtained
-                        by zero-extending a 5-bit unsigned immediate (uimm[4:0])
-                        field encoded in the rs1 field."""
                         return {'type': 'csrrwi', 'rd': rd, 'rs1': rs1, 'csr': csr}
                     case 0b110:
-                        """Set CSR bit using an XLEN-bit value obtained 
-                        by zero-extending a 5-bit unsigned immediate (uimm[4:0]) 
-                        field encoded in the rs1 field."""
                         return {'type': 'csrrsi', 'rd': rd, 'rs1': rs1, 'csr': csr}
                     case 0b111:
-                        """Clear CSR bit using an XLEN-bit value obtained 
-                        by zero-extending a 5-bit unsigned immediate (uimm[4:0]) 
-                        field encoded in the rs1 field."""
                         return {'type': 'csrrci', 'rd': rd, 'rs1': rs1, 'csr': csr}
                     case 0b000:
                         match (instruction >> 7) & 0x3FFFF:
@@ -147,9 +136,6 @@ class Decoder:
                             case 0xA000: # wait for interrupt
                                 return {'type': 'wfi'}
                             case _:
-                                # sfence.vma Guarantees that any previous stores already visible 
-                                # to the current RISC-V hart are ordered before all subsequent implicit 
-                                # references from that hart to the memory-management data structures.
                                 if (instruction >> 12) & 0x08 == 0b000 and (instruction >> 25) == 0x05:
                                     return {'type': 'sfence.vma', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
                                 else: raise Exception(f'Unknown instruction: {hex(opcode)}')
@@ -223,124 +209,3 @@ class Decoder:
                         raise Exception(f'Unknown funct3 in 0x18: {hex(funct3)}')
             case _: 
                 raise Exception(f'Unknown pd: {hex(opcode)}')
-
-
-    def execute_instruction(self, instruction, pc) -> None:
-        decoded = self.decode(instruction)
-        match decoded['type']:
-            case 'lui':
-                self.emu.instructions.lui(decoded['rd'], decoded['imm'])
-            case 'auipc':
-                self.emu.instructions.auipc(decoded['rd'], decoded['imm'], pc)
-            case 'addi':
-                self.emu.instructions.addi(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'slti':
-                self.emu.instructions.slti(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'sltiu':
-                self.emu.instructions.sltiu(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'xori':
-                self.emu.instructions.xori(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'ori':
-                self.emu.instructions.ori(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'andi':
-                self.emu.instructions.andi(decoded['rd'], decoded['rs1'], decoded['imm'])
-            case 'slli':
-                self.emu.instructions.slli(decoded['rd'], decoded['rs1'], decoded['shamt'])
-            case 'srli':
-                self.emu.instructions.srli(decoded['rd'], decoded['rs1'], decoded['shamt'])
-            case 'srai':
-                self.emu.instructions.srai(decoded['rd'], decoded['rs1'], decoded['shamt'])
-            case 'lw':
-                self.emu.instructions.lw(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'sw':
-                self.emu.instructions.sw(decoded['offset'], decoded['rs1'], decoded['rs2'])
-            case 'ecall':
-                self.emu.instructions.ecall()
-            case 'add':
-                self.emu.instructions.add(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'sub':
-                self.emu.instructions.sub(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'slt':
-                self.emu.instructions.slt(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'sltu':
-                self.emu.instructions.sltu(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'and_':
-                self.emu.instructions.and_(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'or_':
-                self.emu.instructions.or_(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'xor':
-                self.emu.instructions.xor(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'sll':
-                self.emu.instructions.sll(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'srl':
-                self.emu.instructions.srl(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'sra':
-                self.emu.instructions.sra(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'fence':
-                self.emu.instructions.fence(decoded['succ'], decoded['pred'])
-            case 'fencei':
-                self.emu.instructions.fencei()
-            case 'csrrw':
-                self.emu.instructions.csrrw(decoded['rd'], decoded['rs1'], decoded['csr'])
-            case 'csrrs':
-                self.emu.instructions.csrrs(decoded['rd'], decoded['rs1'], decoded['csr'])
-            case 'csrrc':
-                self.emu.instructions.csrrc(decoded['rd'], decoded['rs1'], decoded['csr'])
-            case 'csrrwi':
-                self.emu.instructions.csrrwi(decoded['rd'], decoded['uimm'], decoded['csr'])
-            case 'csrrsi':
-                self.emu.instructions.csrrsi(decoded['rd'], decoded['uimm'], decoded['csr'])
-            case 'csrrci':
-                self.emu.instructions.csrrc(decoded['rd'], decoded['uimm'], decoded['csr'])
-            case 'ecall':
-                self.emu.instructions.ecall()
-            case 'ebreak':
-                self.emu.instructions.ebreak()
-            case 'uret':
-                self.emu.instructions.uret()
-            case 'sret':
-                self.emu.instructions.sret()
-            case 'mret':
-                self.emu.instructions.mret()
-            case 'wfi':
-                self.emu.instructions.wfi()
-            case 'sfencevma':
-                self.emu.instructions.sfencevma(decoded['rd'], decoded['rs1'], decoded['rs2'])
-            case 'lb':
-                self.emu.instructions.lb(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'lh':
-                self.emu.instructions.lh(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'lw':
-                self.emu.instructions.lw(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'lbu':
-                self.emu.instructions.lbu(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'lhu':
-                self.emu.instructions.lhu(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'sb':
-                self.emu.instructions.sb(decoded['offset'], decoded['rs1'], decoded['rs2'])
-            case 'sh':
-                self.emu.instructions.sh(decoded['offset'], decoded['rs1'], decoded['rs2'])
-            case 'sw':
-                self.emu.instructions.sw(decoded['offset'], decoded['rs1'], decoded['rs2'])
-            case 'jal':
-                self.emu.instructions.jal(decoded['rd'], decoded['offset'])
-            case 'jalr':
-                self.emu.instructions.jalr(decoded['rd'], decoded['rs1'], decoded['offset'])
-            case 'beq':
-                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'bne':
-                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'blt':
-                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'bge':
-                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'bltu':
-                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'bgeu':
-                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'], pc)
-            case 'remu':
-                #print('call remu')
-                self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])
-            case _ as t: raise Exception(f'Unknown decoded[type] = {t}')
-
-

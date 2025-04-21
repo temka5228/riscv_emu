@@ -4,28 +4,77 @@ from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
 from predictor import GSharePredictor
+from executor import Executor
 
 class RISCVEmu:
     def __init__(self, memory_size:int=4096):
         self.registers = Registers()
         self.csr = Registers(1024)
         self.memory = Memory(memory_size)
-        self.pc = 4  # Program Counter
-        self.running = True
         self.instructions = Instructions(self)
         self.decoder = Decoder(self)
+        self.executor = Executor(self)
+
+        self.halted = False
+        self.use_bp = False
         self.running = False
+
         self.load_address = 0
         self.len_file = 0
+        self.cycle = 0
+        self.pc = 0  # Program Counter
 
-        self.use_bp = False
+        self.IF_ID = {}
+        self.ID_EX = {}
+        self.EX_MEM = {}
+        self.MEM_WB = {}
 
         self.bp = GSharePredictor(history_bits=8, bht_bits=10)
         self.btb = {}
         self.last_pred = None
+
+    def step(self):
+        self.writeback()
+        self.memory_access()
+        self.execute()
+        self.decode()
+        self.fetch()
+        self.cycle += 1
     
     def fetch(self):
-        return self.memory.read(self.pc)
+        if self.halted:
+            self.IF_ID = {}
+            return
+        inst = self.read_memory_word(self.pc)
+        self.IF_ID = {
+            'pc': self.pc,
+            'inst' : inst
+        }
+        self.pc += 4
+
+    def read_memory_word(self, addr):
+        b = self.memory[addr:addr + 4]
+        return int.from_bytes(b, byteorder='little')
+    
+    def decode(self):
+        if not self.IF_ID:
+            self.ID_EX = {}
+            return
+        inst = self.IF_ID['inst']
+        pc = self.IF_ID['pc']
+        self.ID_EX = {
+            'pc': pc,
+            'inst': inst
+        }
+
+    def execute(self):
+        pass
+
+    def memory_access(self):
+        pass
+
+    def writeback(self):
+        pass
     
     def run(self, address=None) -> None:
         if address != None:
@@ -35,7 +84,8 @@ class RISCVEmu:
         while self.running:
             try:
                 instruction, pc = self.fetch_instruction()
-                self.decoder.execute_instruction(instruction, pc)
+                decodedInstruction = self.decoder.decode(instruction)
+                self.executor.execute_instruction(decodedInstruction, pc)
             except Exception as c:
                 print(f'exception ::: {c}')
                 self.running = False

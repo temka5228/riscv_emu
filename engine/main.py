@@ -1,5 +1,5 @@
 from riscv_emu import RISCVEmu
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.responses import HTMLResponse, JSONResponse,PlainTextResponse
 from pydantic import BaseModel
 import base64
@@ -13,25 +13,25 @@ class File(BaseModel):
     file_path: str
 
 @app.post("/load/")
-async def load_file(file: File):
-    print('in python func load file', file.file_path)
-    programm = bytearray(base64.b64decode(file.file_path))
+async def load_file(file = Body(embed=True)):
+    print('in python func load file', file)
+    programm = bytearray(base64.b64decode(file))
     riscv.load_binary(programm)
     return {"status": "completed"}
 
 @app.post('/set-address')
-def set_address(address:int):
-    riscv.set_address(address)
+def set_address(start_address= Body(embed=True)):
+    riscv.set_address(start_address)
     return {"status": "completed"}
 
 @app.post('/set-memory')
-def set_memory_size(size:int):
+def set_memory_size(size= Body(embed=True)):
     riscv.set_memory_size(size)
     return {"status": "completed"}
 
 @app.post('/start')
-def run():
-    riscv.run()
+def run(address= Body(embed=True)):
+    riscv.run(address)
     return {"command": "run", "status": "completed"}
 
 @app.get('/decode')

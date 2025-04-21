@@ -4,8 +4,8 @@ contextBridge.exposeInMainWorld('riscvAPI', {
     loadFile: async (binaryString) => {
         return await ipcRenderer.invoke('load-file', binaryString)
     },
-    startEmulation: async () => {
-       return await ipcRenderer.invoke('run')
+    startEmulation: async (address) => {
+       return await ipcRenderer.invoke('run', address)
     },
     //getState: () => fetch('http://localhost:8000/state').then(res => console.log(res.json())),
     getRegisters: async () => {

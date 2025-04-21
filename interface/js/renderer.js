@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     runBtn.addEventListener('click', async () => {
-        await riscvAPI.startEmulation();
+        await riscvAPI.startEmulation(parseInt(memoryAddress.value));
         updateTable();
     })
 
@@ -51,7 +51,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     memorySize.addEventListener('change', () => {
         memoryAddress.max = memorySize.value;
+        riscvAPI.setMemorySize(parseInt(memorySize.value))
+    })
 
+    memoryAddress.addEventListener('change', () => {
+        riscvAPI.setStartAddress(parseInt(memoryAddress.value))
     })
 
     riscvAPI.onConsoleOutput((data) => {

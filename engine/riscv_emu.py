@@ -20,7 +20,10 @@ class RISCVEmu:
     def fetch(self):
         return self.memory.read(self.pc)
     
-    def run(self) -> None:
+    def run(self, address=None) -> None:
+        if address:
+            self.pc = address
+            
         self.running = True
         while self.running:
             try:

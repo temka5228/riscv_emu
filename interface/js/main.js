@@ -118,9 +118,13 @@ app.on('uncaughtException', (err) => {
 
 // CREATING HANDLERS
 function createHandlers() {
-  ipcMain.handle('run', async() => {
+  ipcMain.handle('run', async(_, address_start) => {
     response = await fetch(URL + '/start', {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        address: address_start
+      })
     })
     return await response.json()
   })
@@ -130,7 +134,7 @@ function createHandlers() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        file_path: binaryString
+        file: binaryString
       })
     })
     return await response.ok
@@ -163,6 +167,7 @@ function createHandlers() {
   })
   
   ipcMain.handle('set-memory', async (_, size) => {
+    console.log(typeof size)
     response = await fetch(URL + '/set-memory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

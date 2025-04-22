@@ -206,13 +206,15 @@ class Instructions:
         value = self.emu.registers[rs2] & 0xFFFF_FFFF
         self.emu.memory[self.emu.registers[rs1] + offset] = value
     #sext
-    def jal(self, rd, offset):
-        self.emu.registers[rd] = self.emu.pc + 4
+    def jal(self, rd, offset, pc):
+        self.emu.flush = True
+        self.emu.registers[rd] = pc + 4
         offset = sextToInt(offset, 19)
-        self.emu.pc += offset - 4
+        self.emu.pc = pc + offset - 4
 
-    def jalr(self, rd, rs1, offset):
-        value = self.emu.pc + 4
+    def jalr(self, rd, rs1, offset, pc):
+        self.emu.flush = True
+        value = pc + 4
         self.emu.pc = (self.emu.registers[rs1] + sextToInt(offset, 11)) & ~1 - 4
         self.emu.registers[rd] = value
 
@@ -233,6 +235,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
         #pc += offset - 4
 
@@ -251,6 +254,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
     
     def blt(self, rs1, rs2, offset, pc):
@@ -268,6 +272,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
     #sext offset and up
     def bge(self, rs1, rs2, offset, pc):
@@ -285,6 +290,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
     #unsigned
     def bltu(self, rs1, rs2, offset, pc):
@@ -302,6 +308,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
     #unsigned
     def bgeu(self, rs1, rs2, offset, pc):
@@ -320,6 +327,7 @@ class Instructions:
             self.emu.bp.update(pc, taken)
         else: 
             if taken:
+                self.emu.flush = True
                 self.emu.pc = target
 
     """    R32M INSTRUCTIONS    """

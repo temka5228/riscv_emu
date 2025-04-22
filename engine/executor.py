@@ -7,7 +7,7 @@ class Executor:
     def __init__(self, emu: riscv_emu.RISCVEmu):
         self.emu = emu
 
-    def execute_instruction(self, decoded) -> None:
+    def execute_instruction(self, decoded:dict) -> None:
         match decoded['type']:
             case 'lui':
                 self.emu.instructions.lui(decoded['rd'], decoded['imm'])
@@ -108,17 +108,17 @@ class Executor:
             case 'jalr':
                 self.emu.instructions.jalr(decoded['rd'], decoded['rs1'], decoded['offset'], decoded['pc'])
             case 'beq':
-                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.beq(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'bne':
-                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.bne(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'blt':
-                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.blt(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'bge':
-                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.bge(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'bltu':
-                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'bgeu':
-                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'])
+                self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'remu':
                 #print('call remu')
                 self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])

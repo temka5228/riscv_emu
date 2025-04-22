@@ -177,7 +177,9 @@ class Instructions:
         self.emu.registers[rd] = sextToInt(value, 15)
     #sext
     def lw(self, rd, rs1, offset):
+        print(offset)
         offset = sextToInt(offset, 11)
+        print(offset, self.emu.registers[rs1])
         value = self.emu.memory[self.emu.registers[rs1] + offset] & 0xFFFF_FFFF
         self.emu.registers[rd] = sextToInt(value, 31)
     
@@ -218,28 +220,25 @@ class Instructions:
         self.emu.pc = (self.emu.registers[rs1] + sextToInt(offset, 11)) & ~1 - 4
         self.emu.registers[rd] = value
 
-    def beq(self, rs1, rs2, offset, pc):
+    def beq(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         #if self.emu.registers[rs1] == self.emu.registers[rs2]:
         offset = sextToInt(offset, 12)
-        target = pc + offset
         taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
+        target = pc + offset if taken else pc + 4
         if self.emu.use_bp:
-            self.emu.btb[pc] = target
-            last_pc, pred_taken, pred_next = self.emu.last_pred
-            assert last_pc == pc, "Нарушена связь fetch - execute"
-
-            if pred_taken != taken or (taken and pred_next != target):
-                #print('Промах')
-                self.emu.pc = target if taken else pc + 4
-            
-            self.emu.bp.update(pc, taken)
-        else: 
-            if taken:
+            if taken != pred_taken or (taken and pred_next_pc != target):
                 self.emu.flush = True
                 self.emu.pc = target
+            if taken:
+                self.emu.btb[pc] = target
+            self.emu.bp.update(pc, taken)
+        else:
+            if taken:
+                self.emu.flush = True
+            self.emu.pc = target
         #pc += offset - 4
 
-    def bne(self, rs1, rs2, offset, pc):
+    def bne(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         target = pc + offset
         taken = (self.emu.registers[rs1] != self.emu.registers[rs2])
@@ -257,25 +256,23 @@ class Instructions:
                 self.emu.flush = True
                 self.emu.pc = target
     
-    def blt(self, rs1, rs2, offset, pc):
+    def blt(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
-        target = pc + offset
         taken = (self.emu.registers[rs1] < self.emu.registers[rs2])
+        target = pc + offset if taken else pc + 4
         if self.emu.use_bp:
-            self.emu.btb[pc] = target
-            last_pc, pred_taken, pred_next = self.emu.last_pred
-            assert last_pc == pc, "Нарушена связь fetch - execute"
-
-            if pred_taken != taken or (taken and pred_next != target):
-                self.emu.pc = target if taken else pc + 4
-            
-            self.emu.bp.update(pc, taken)
-        else: 
-            if taken:
+            if taken != pred_taken or (taken and pred_next_pc != target):
                 self.emu.flush = True
                 self.emu.pc = target
+            if taken:
+                self.emu.btb[pc] = target
+            self.emu.bp.update(pc, taken)
+        else:
+            if taken:
+                self.emu.flush = True
+            self.emu.pc = target
     #sext offset and up
-    def bge(self, rs1, rs2, offset, pc):
+    def bge(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         target = pc + offset
         taken = (self.emu.registers[rs1] >= self.emu.registers[rs2])
@@ -293,7 +290,7 @@ class Instructions:
                 self.emu.flush = True
                 self.emu.pc = target
     #unsigned
-    def bltu(self, rs1, rs2, offset, pc):
+    def bltu(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         target = pc + offset
         taken = (abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]))
@@ -311,7 +308,7 @@ class Instructions:
                 self.emu.flush = True
                 self.emu.pc = target
     #unsigned
-    def bgeu(self, rs1, rs2, offset, pc):
+    def bgeu(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         target = pc + offset
         taken = (abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]))

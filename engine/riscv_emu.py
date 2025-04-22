@@ -7,7 +7,7 @@ from predictor import GSharePredictor
 from executor import Executor
 
 class RISCVEmu:
-    def __init__(self, memory_size:int=4096):
+    def __init__(self, memory_size:int=294_967_295):
         self.load_address = 0
         self.len_file = 0
         self.cycle = 0
@@ -43,45 +43,73 @@ class RISCVEmu:
             self.EX_MEM = None
 
         if self.ID_EX and not self.stall:
+            print(self.ID_EX)
             self.executor.execute_instruction(self.ID_EX)
             self.EX_MEM = self.ID_EX
-            print(self.EX_MEM, 'instr executed')
+            #print(self.EX_MEM, 'executer')
             self.ID_EX = None
         
         if self.IF_ID and not self.stall:
             instr = self.IF_ID
             decoded = self.decoder.decode(instr['raw'])
+            #print(decoded, 'decoded')
             decoded['pc'] = instr['pc']
+            if self.use_bp:
+                decoded['pred_taken'] = instr['pred_taken']
+                decoded['pred_next_pc'] = instr['pred_next_pc']
 
             if self.EX_MEM and 'rd' in decoded and 'rd' in self.EX_MEM:
                 if decoded.get('rs1') == self.EX_MEM.get('rd') or decoded.get('rs2') == self.EX_MEM.get('rd'):
                     self.stall = True
-                    return
+                    #return
             else:
                 self.stall = False
     
             self.ID_EX = decoded
-            print(self.ID_EX, 'from decoder')
             self.IF_ID = None
+
         if self.flush:
             self.ID_EX = None
             self.IF_ID = None
             self.flush = False
-        else:
+        elif not self.stall:
             instr_bytes = self.read_memory_word(self.pc)
-            self.IF_ID = {'pc': self.pc, 'raw': instr_bytes}
-            print(self.IF_ID, 'from fetch')
-            self.pc += 4
+            self.IF_ID = {
+                'pc': self.pc,
+                'raw': instr_bytes
+            }
+            if self.use_bp:
+                pred_taken = self.bp.predict(self.pc)
+                self.IF_ID['pred_taken'] = pred_taken
+                self.IF_ID['pred_next_pc'] = self.btb.get(self.pc, self.pc + 4) if pred_taken else self.pc + 4
+                self.pc = self.IF_ID['pred_next_pc']
+            else:
+                self.pc += 4
+            #print(self.IF_ID, 'fetch')
+        else: self.stall = False
 
-    def run(self, steps=1000):
+    def run(self, address=None):
+        self.IF_ID = None
+        self.ID_EX = None
+        self.EX_MEM = None
+        self.MEM_WB = None
+
+        if address != None:
+            self.pc = address
+
         self.running = True
         while self.running:
+            self.step()
+            print(self.registers)
+            '''
             try:
                 self.step()
             except Exception as ex:
                 print(f'Exception : {ex}')
                 self.running = False
+                '''
 
+                
     def fetch(self):
         if self.halted:
             self.IF_ID = {}

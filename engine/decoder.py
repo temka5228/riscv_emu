@@ -152,7 +152,7 @@ class Decoder:
                     case 0b001: # Загрузить 16-битное число из памяти и знакого расширить
                         return {'type': 'lh', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b010: # Загрузить 32-битное число из памяти и знакого расширить
-                        return {'type': 'lW', 'rd': rd, 'rs1': rs1, 'offset': offset}
+                        return {'type': 'lw', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b100: # Загрузить 8-битное число из памяти и расширить нулями
                         return {'type': 'lbu', 'rd': rd, 'rs1': rs1, 'offset': offset}
                     case 0b101: # Загрузить 16-битное число из памяти и расширить нулями

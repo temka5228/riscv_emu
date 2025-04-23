@@ -3,11 +3,11 @@ from registers import Registers
 from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
-from predictor import GSharePredictor, BimodalPredictor, TruePredictor
+from predictor import GSharePredictor, BimodalPredictor
 from executor import Executor
 
 class RISCVEmu:
-    def __init__(self, memory_size:int=16_384):
+    def __init__(self, memory_size:int=32768):
         self.load_address = 0
         self.len_file = 0
         self.cycle = 0
@@ -36,6 +36,7 @@ class RISCVEmu:
 
         self.btb = {}
         self.last_pred = None
+        self.pred_taken_pattern = '0' * 10
 
     def step(self):
         self.instr_count += 1
@@ -112,7 +113,6 @@ class RISCVEmu:
                 print(f'Exception : {ex}')
                 self.running = False
 
-
     def read_memory_word(self, addr):
         b = self.memory[addr:addr + 4]
         return int.from_bytes(b, byteorder='little')
@@ -124,6 +124,10 @@ class RISCVEmu:
         except ValueError:
             self.running = False
         self.pc = self.load_address
+
+    def log_branch_info(self, pc, next_pc, instr_type, rs1, rs2, reg_rs1, reg_rs2, taken, pred_taken):
+        with open("./data/branch_log.csv", "a") as f:
+            f.write(f"{pc},{next_pc},{instr_type},{rs1},{rs2},{reg_rs1},{reg_rs2},{int(taken)},{pred_taken}\n")
     
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}
@@ -141,6 +145,9 @@ class RISCVEmu:
             pc += 4
         return json_res
     
+    def write_taken_branch(self, taken:bool):
+        self.pred_taken_pattern = self.pred_taken_pattern[1:] + str(int(taken))
+
     def set_address(self, address):
         if address >= 0:
             self.load_address = address

@@ -200,19 +200,19 @@ class Instructions:
         offset = sextToInt(offset, 11)
         value = self.emu.registers[rs2] & 0xFF
         target = self.emu.registers[rs1] + offset
-        self.emu.memory[target:target + 4] = value.to_bytes(4, 'big')
+        self.emu.memory[target:target + 1] = value.to_bytes(1, 'little')
 
     def sh(self, offset, rs1, rs2):
         offset = sextToInt(offset, 11)
         value = self.emu.registers[rs2] & 0xFFFF
         target = self.emu.registers[rs1] + offset
-        self.emu.memory[target:target + 4] = value.to_bytes(4, 'big')
+        self.emu.memory[target:target + 2] = value.to_bytes(2, 'little')
     
     def sw(self, offset, rs1, rs2):
         offset = sextToInt(offset, 11)
         value = self.emu.registers[rs2] & 0xFFFF_FFFF
         target = self.emu.registers[rs1] + offset
-        self.emu.memory[target:target + 4] = value.to_bytes(4, 'big')
+        self.emu.memory[target:target + 4] = value.to_bytes(4, 'little')
     #sext
     def jal(self, rd, offset, pc):
         self.emu.flush = True
@@ -231,6 +231,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "beq",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -250,6 +262,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] != self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "bne",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -268,6 +292,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] < self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "blt",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -286,6 +322,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] >= self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "bge",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -304,6 +352,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "bltu",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -322,6 +382,18 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
+        self.emu.log_branch_info(
+            pc,
+            pc + offset,
+            "bgeu",
+            rs1,
+            rs2,
+            self.emu.registers[rs1],
+            self.emu.registers[rs2],
+            taken,
+            self.emu.pred_taken_pattern
+            )
+        self.emu.write_taken_branch(taken)
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):

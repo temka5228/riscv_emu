@@ -8,7 +8,7 @@ class Memory:
     def read(self, address:int | slice) -> bytearray:
         if type(address) == slice:
             if address.stop >= len(self.__memory):
-                raise ValueError("Address out of range")
+                raise ValueError("Address out of range", address)
         return self.__memory[address]
 
     def write(self, address, value):

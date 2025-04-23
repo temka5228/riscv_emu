@@ -3,15 +3,18 @@ from registers import Registers
 from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
-from predictor import GSharePredictor
+from predictor import GSharePredictor, BimodalPredictor, TruePredictor
 from executor import Executor
 
 class RISCVEmu:
-    def __init__(self, memory_size:int=294_967_295):
+    def __init__(self, memory_size:int=16_384):
         self.load_address = 0
         self.len_file = 0
         self.cycle = 0
         self.pc = 0
+        self.bp_total = 0
+        self.bp_mispredict = 0
+        self.instr_count = 0
 
         self.registers = Registers()
         self.csr = Registers(1024)
@@ -19,7 +22,7 @@ class RISCVEmu:
         self.instructions = Instructions(self)
         self.decoder = Decoder(self)
         self.executor = Executor(self)
-        self.bp = GSharePredictor(history_bits=8, bht_bits=10)
+        self.bp = GSharePredictor(history_bits=12, bht_bits=12)
 
         self.stall = False
         self.flush = False
@@ -35,6 +38,8 @@ class RISCVEmu:
         self.last_pred = None
 
     def step(self):
+        self.instr_count += 1
+
         if self.MEM_WB:
             self.MEM_WB = None
         
@@ -43,8 +48,8 @@ class RISCVEmu:
             self.EX_MEM = None
 
         if self.ID_EX and not self.stall:
-            print(self.ID_EX)
             self.executor.execute_instruction(self.ID_EX)
+            #print(self.registers)
             self.EX_MEM = self.ID_EX
             #print(self.EX_MEM, 'executer')
             self.ID_EX = None
@@ -93,88 +98,32 @@ class RISCVEmu:
         self.ID_EX = None
         self.EX_MEM = None
         self.MEM_WB = None
+        self.instr_count = 0
 
         if address != None:
             self.pc = address
 
         self.running = True
         while self.running:
-            self.step()
-            print(self.registers)
-            '''
+
             try:
                 self.step()
             except Exception as ex:
                 print(f'Exception : {ex}')
                 self.running = False
-                '''
 
-                
-    def fetch(self):
-        if self.halted:
-            self.IF_ID = {}
-            return
-        inst = self.read_memory_word(self.pc)
-        self.IF_ID = {
-            'pc': self.pc,
-            'inst' : inst
-        }
-        self.pc += 4
 
     def read_memory_word(self, addr):
         b = self.memory[addr:addr + 4]
         return int.from_bytes(b, byteorder='little')
 
-
-    
-    def run1(self, address=None) -> None:
-        if address != None:
-            self.pc = address
-
-        self.running = True
-        while self.running:
-            try:
-                instruction, pc = self.fetch_instruction()
-                decodedInstruction = self.decoder.decode(instruction)
-                self.executor.execute_instruction(decodedInstruction, pc)
-            except Exception as c:
-                print(f'exception ::: {c}')
-                self.running = False
-
-    def load_binary(self, file):
+    def load_binary(self, file, address):
         self.len_file = len(file)
         try:
-            self.memory[self.load_address: self.load_address + self.len_file] = file
+            self.memory[address: address + self.len_file] = file
         except ValueError:
             self.running = False
         self.pc = self.load_address
-        
-    def fetch_instruction(self) -> int:
-        self.pc &= 0xFFFF_FFFC
-        pc = self.pc
-
-        try:
-            instr_bytes = self.memory[self.pc:self.pc + 4]
-            instruction = int.from_bytes(instr_bytes, byteorder='little')
-        except ValueError:
-            self.running = False
-            self.pc = 0
-            return 0x0
-        
-        if self.use_bp:
-            taken = self.bp.predict(pc)
-            if taken and pc in self.btb:
-                next_pc = self.btb[pc]
-            else:
-                next_pc = pc + 4
-            self.last_pred = (pc, taken, next_pc)
-            self.pc = next_pc
-        else:
-            self.pc += 4
-        
-        #print(f'instruction: {hex(instruction)}, programm counter: {self.pc}')
-        #self.pc += 4
-        return instruction, pc
     
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}

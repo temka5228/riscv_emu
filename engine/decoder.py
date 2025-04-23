@@ -166,11 +166,11 @@ class Decoder:
                 funct3 = (instruction >> 12) & 0x07
                 match funct3:
                     case 0b000: # Помещает 8-битное число с младших битов rs2 в память
-                        return {'type': 'sb', 'rs1': rs1, 'rs2': rs2}
+                        return {'type': 'sb', 'rs1': rs1, 'rs2': rs2, 'offset': offset}
                     case 0b001: # Помещает 16 младших бит числа rs2 в память
-                        return {'type': 'sh', 'rs1': rs1, 'rs2': rs2}
+                        return {'type': 'sh', 'rs1': rs1, 'rs2': rs2, 'offset': offset}
                     case 0b010: # Помещает 32 младших бит числа rs2 в память
-                        return {'type': 'sw', 'rs1': rs1, 'rs2': rs2}
+                        return {'type': 'sw', 'rs1': rs1, 'rs2': rs2, 'offset': offset}
                     case _: 
                         raise Exception(f'Unknown funct3 in 0x08: {hex(funct3)}')
             

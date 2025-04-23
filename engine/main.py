@@ -3,6 +3,7 @@ from fastapi import FastAPI, Body
 from fastapi.responses import HTMLResponse, JSONResponse,PlainTextResponse
 from pydantic import BaseModel
 import base64
+import time
 
 HOST = "localhost"
 PORT = 8000
@@ -13,10 +14,10 @@ class File(BaseModel):
     file_path: str
 
 @app.post("/load/")
-async def load_file(file = Body(embed=True)):
+async def load_file(file = Body(embed=True), address= Body(embed=True)):
     print('in python func load file', file)
     programm = bytearray(base64.b64decode(file))
-    riscv.load_binary(programm)
+    riscv.load_binary(programm, address)
     return {"status": "completed"}
 
 @app.post('/set-address')
@@ -31,8 +32,9 @@ def set_memory_size(size= Body(embed=True)):
 
 @app.post('/start')
 def run(address= Body(embed=True)):
+    time_start = time.time()
     riscv.run(address)
-    return {"command": "run", "status": "completed"}
+    return {"command": "run", "status": "completed", "time":time.time() - time_start}
 
 @app.get('/decode')
 def decode():

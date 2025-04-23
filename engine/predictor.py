@@ -28,3 +28,17 @@ class GSharePredictor:
         
         self.ghr = ((self.ghr << 1) | (1 if taken else 0)) & self.ghr_mask
         
+class BimodalPredictor:
+    def __init__(self, bht_bits=10):
+        self.bht_bits = bht_bits
+        self.bht_size = 1 << bht_bits
+        self.bht = [1] * self.bht_size
+
+    def _index(self, pc):
+        return (pc >> 2) ^ (self.bht_size - 1)
+    
+    def predict(self, pc):
+        return bool(self.bht[self._index(pc)])
+    
+    def update(self, pc, taken):
+        self.bht[self._index(pc)] = 1 if taken else 0

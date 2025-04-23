@@ -129,7 +129,7 @@ body {
 
 .control-buttons {
     display: grid;
-    grid-template-columns: 0fr 1fr 0fr;
+    grid-template-columns: 1fr 1fr 0fr;
     justify-content: space-between;
     gap: 10px;
     padding-bottom: 10px;
@@ -142,6 +142,13 @@ body {
     text-align: center;
     align-self: center;
 }
+
+.load-buttons {
+    display:grid;
+    grid-template-columns: repeat(3, 0fr);
+    gap: 10px;
+    white-space: nowrap;
+}
 .start-stop-buttons {
     display: grid;
     grid-template-columns: repeat(3, 0fr);
@@ -149,10 +156,16 @@ body {
     gap: 10px;
 }
 
-.control-buttons button {
+.load-buttons button {
     width: fit-content;
     height: 30;
     padding: 5px 10px;
+    font-size: 14px;
+    background-color: #4c4f57;
+}
+
+.load-buttons button:hover {
+    background-color: var(--console-table-color);
 }
 
 .editor-section {

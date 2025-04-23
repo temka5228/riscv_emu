@@ -7,24 +7,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const side_buttons = document.querySelectorAll('.sidebar button');
     const tabs = document.querySelectorAll('.tab-content');
     const tableBtns = document.querySelectorAll('.table-btn');
+
     const uploadBtn = document.getElementById('button-upload');
     const uploader = document.getElementById('uploadFile');
+    const loadText = document.getElementById('load-text');
+    const loadData = document.getElementById('load-data');
+
     const runBtn = document.getElementById('button-start');
     const pauseBtn = document.getElementById('button-pause');
-    const memoryAddress = document.getElementById('memory-address');
+    
+    const textAddress = document.getElementById('text-address');
+    const dataAddress = document.getElementById('data-address');
     const memorySize = document.getElementById('memory-size');
+    const predictor = document.getElementById('ml-prediction');
+
     const fileName = document.getElementById('file-name');
     const terminal = document.getElementById('console');
 
+
     // Инициализация редактора кода
     codeEditor.innerHTML = '// Your code here';
+    
+    let base64String = '';
 
     // Обработчик загрузки файла
     async function readFile() {
         var f = uploader.files[0];
         fname = uploader.value.split('\\').pop()
         const arrayBuffer = await f.arrayBuffer();
-        const  base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+        /*
         responseOk = await riscvAPI.loadFile(base64String);
         if (responseOk) {
             responseJson = await riscvAPI.decodeProgramm();
@@ -32,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fileName.innerText = fname;
             codeEditor.innerHTML = responseJson['bytes'];
             outputConsole.innerHTML = responseJson['decoded'];
-        }
+        } */
     }
 
     uploader.addEventListener("change", readFile);
@@ -40,9 +52,24 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadBtn.addEventListener('click', () => {
         uploader.click();
     });
+
+    loadText.addEventListener('click', async () => {
+        responseOk = await riscvAPI.loadFile(base64String, parseInt(textAddress.value));
+        if (responseOk) {
+            responseJson = await riscvAPI.decodeProgramm();
+            updateTable();
+            fileName.innerText = fname;
+            codeEditor.innerHTML = responseJson['bytes'];
+            outputConsole.innerHTML = responseJson['decoded'];
+        }
+    })
+
+    loadData.addEventListener('click', async () => {
+        await riscvAPI.loadFile(base64String, parseInt(dataAddress.value))
+    })
     
     runBtn.addEventListener('click', async () => {
-        await riscvAPI.startEmulation(parseInt(memoryAddress.value));
+        await riscvAPI.startEmulation(parseInt(textAddress.value));
         updateTable();
     })
 
@@ -50,12 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     memorySize.addEventListener('change', () => {
-        memoryAddress.max = memorySize.value;
+        textAddress.max = memorySize.value;
         riscvAPI.setMemorySize(parseInt(memorySize.value))
     })
 
-    memoryAddress.addEventListener('change', () => {
-        riscvAPI.setStartAddress(parseInt(memoryAddress.value))
+    textAddress.addEventListener('change', () => {
+        riscvAPI.setStartAddress(parseInt(textAddress.value))
     })
 
     riscvAPI.onConsoleOutput((data) => {

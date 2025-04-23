@@ -129,12 +129,13 @@ function createHandlers() {
     return await response.json()
   })
 
-  ipcMain.handle('load-file', async (_, binaryString) => {
+  ipcMain.handle('load-file', async (_, binaryString, address) => {
     response = await fetch(URL + '/load/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        file: binaryString
+        file: binaryString,
+        address: address
       })
     })
     return await response.ok

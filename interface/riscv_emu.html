@@ -51,7 +51,11 @@
                 <div class="substrate" id="uploadForm">
                     <div class="left-half">
                         <div class="control-buttons">
-                            <button id="button-upload" >Upload...</button>
+                            <div class="load-buttons">
+                                <button id="button-upload" >Upload...</button>
+                                <button id="load-data">Load .data</button>
+                                <button id="load-text">Load .text</button>
+                            </div>
                             <label id="file-name"></label>
                             <input class="form-upload" id="uploadFile" type="file" name="file_name" style="display:none">
                             <!--<button class="upload" id="button-upload">Upload...</button>-->
@@ -109,12 +113,16 @@
                         <input type="checkbox" id="ml-checkbox" name="ml-checkbox">
                     </div>
                     <div>
-                        <label for="memory-address">Memory address of the beginning of the program:</label>
-                        <input type="number" id="memory-address" name="memory-address" min="0" max="4096" value="4"/>
+                        <label for="memory-address">Memory address of .text</label>
+                        <input type="number" id="text-address" name="text-address" min="0" max="16384" value="0"/>
+                    </div>
+                    <div>
+                        <label for="memory-address">Memory address of .data</label>
+                        <input type="number" id="data-address" name="data-address" min="0" max="16384" value="8192"/>
                     </div>
                     <div>
                         <label for="memory-size">Memory size in bytes: </label>
-                        <input type="number" id="memory-size" name="memory-size" min="64" max="4096" value="4096">
+                        <input type="number" id="memory-size" name="memory-size" min="64" max="16384" value="16384">
                     </div>
                 </div>
             </div>

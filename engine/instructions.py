@@ -69,8 +69,19 @@ class Instructions:
 
     def ecall(self):
         # Simple system call: print the value in x10
-        value = self.emu.registers[10]
-        print(f"Value in x10: {value}")
+        match self.emu.registers[17]:
+            case 1:
+                print(self.emu.registers[10])
+            case 4:
+                print(self.emu.read_memory_word(self.emu.registers[10]))
+            case 5:
+                print('Enter integer number: ', end='')
+                self.emu.registers[10] = input()
+            case 10:
+                raise Exception("Endpoint ECALL")
+            case _:
+                raise Exception("Error in ecall: Unknown number in R[a7]")
+
 
     def add(self, rd, rs1, rs2):
         value = self.emu.registers[rs1] + self.emu.registers[rs2]
@@ -144,9 +155,6 @@ class Instructions:
         value = self.emu.csr[csr]
         self.emu.csr[csr] = value & ~uimm
         self.emu.registers[rd] = value
-    
-    def ecall(self):
-        raise Exception(f'Exception on emu')
     
     def ebreak(self):
         raise Exception(f'Breakpoint')

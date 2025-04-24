@@ -1,83 +1,81 @@
     .data
-graph:      .word 1, -1, 2, -1, 3, -1, 4, -1, -1  # Пример графа из 5 узлов
-visited:    .space 20                           # visited[5]
-queue:      .space 20                           # очередь
-head:       .word 0
-tail:       .word 0
+N:          .word 16
+adj:        .space 1024     # матрица смежности (adj[i][j] = 1 или 0)
+visited:    .space 64
+stack:      .space 256        # стек (размер 64)
 
     .text
     .globl _start
 _start:
-    li t0, 0
-    la t1, visited
-    li a1, 5
-    li a2, -1
-zero_loop_b:
+    la      s0, adj
+    la      s1, visited
+    la      s2, stack
+    li      s3, 0    
+    li a5, 16          # top = 0
 
-    beq t0, a1, bfs_init
-    sb zero, 0(t1)
-    addi t0, t0, 1
-    addi t1, t1, 1
-    j zero_loop_b
+    # Заполняем visited нулями
+    li      t0, 0
+zero_visited:
+    sw      x0, 0(s1)
+    addi    s1, s1, 4
+    addi    t0, t0, 1
+    li      t1, 16
+    blt     t0, t1, zero_visited
+    la      s1, visited        # восстановим s1
 
-bfs_init:
-    # enqueue(0)
-    la t0, queue
-    li t1, 0
-    sw t1, 0(t0)
-    li t1, 1
-    la t2, tail
-    sw t1, 0(t2)
+    # stack[0] = 0 (начинаем с вершины 0)
+    sw      x0, 0(s2)          # stack[0] = 0
 
-bfs_loop:
-    la t1, head
-    lw t2, 0(t1)
-    la t3, tail
-    lw t4, 0(t3)
-    beq t2, t4, end_bfs    # if head == tail
+dfs_loop:
+    # if top < 0: конец
+    blt     s3, x0, done
 
-    la t0, queue
-    slli t5, t2, 2
-    add t0, t0, t5
-    lw t6, 0(t0)           # node = queue[head]
-    addi t2, t2, 1
-    sw t2, 0(t1)
+    # node = stack[top]
+    slli    t0, s3, 2
+    add     t1, s2, t0
+    lw      t2, 0(t1)          # t2 = node
 
-    la t0, visited
-    add t0, t0, t6
-    lb s0, 0(t0)
-    bne s0, zero, bfs_loop
+    # top--
+    addi    s3, s3, -1
 
-    li s0, 1
-    sb s0, 0(t0)           # visited[node] = 1
+    # if visited[node] == 1 → continue
+    slli    t3, t2, 2
+    add     t4, s1, t3
+    lw      t5, 0(t4)
+    bne     t5, x0, dfs_loop   # пропускаем уже посещённую
 
-    # перебор соседей
-    slli t1, t6, 2
-    la t0, graph
-    add t0, t0, t1
+    # visited[node] = 1
+    li      t5, 1
+    sw      t5, 0(t4)
 
-bfs_neighbors:
-    lw t1, 0(t0)
-    beq t1, a2, bfs_loop
+    # Цикл по соседям i = 15 → 0 (чтобы DFS шел глубже)
+    li      t6, 15
+neighbor_loop:
+    blt     t6, x0, dfs_loop
 
-    la t2, visited
-    add t2, t2, t1
-    lb t3, 0(t2)
-    bne t3, zero, skip_enqueue
+    # if adj[node][i] == 1 && !visited[i]
+    mul     s7, t2, a5         # row offset = node * 16
+    add     s7, s7, t6         # index = node*16 + i
+    slli    s7, s7, 2
+    add     s8, s0, s7
+    lw      s9, 0(s8)          # s9 = adj[node][i]
 
-    # enqueue(t1)
-    la t4, tail
-    lw t5, 0(t4)
-    la t6, queue
-    slli s0, t5, 2
-    add t6, t6, s0
-    sw t1, 0(t6)
-    addi t5, t5, 1
-    sw t5, 0(t4)
+    beq     s9, x0, skip_neighbor
 
-skip_enqueue:
-    addi t0, t0, 4
-    j bfs_neighbors
+    slli    s10, t6, 2
+    add     s11, s1, s10
+    lw      s6, 0(s11)
+    bne     s6, x0, skip_neighbor
 
-end_bfs:
+    # push i на стек
+    addi    s3, s3, 1
+    slli    s5, s3, 2
+    add     s5, s2, s5
+    sw      t6, 0(s5)
+
+skip_neighbor:
+    addi    t6, t6, -1
+    j       neighbor_loop
+
+done:
     wfi

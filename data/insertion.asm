@@ -20,20 +20,20 @@ outer_loop:
 inner_loop:
     blt t6, zero, insert_key
 
-    slli t7, t6, 2     # t7 = j * 4
-    add t8, t0, t7     # t8 = &array[j]
-    lw t9, 0(t8)       # t9 = array[j]
-    ble t9, t5, insert_key
+    slli a7, t6, 2     # a7 = j * 4
+    add a6, t0, a7     # a6 = &array[j]
+    lw a5, 0(a6)       # a5 = array[j]
+    ble a5, t5, insert_key
 
-    sw t9, 4(t8)       # array[j+1] = array[j]
+    sw a5, 4(a6)       # array[j+1] = array[j]
     addi t6, t6, -1    # j--
 
     j inner_loop
 
 insert_key:
-    slli t7, t6, 2     # t7 = j * 4
-    add t8, t0, t7
-    sw t5, 4(t8)       # array[j+1] = key
+    slli a7, t6, 2     # a7 = j * 4
+    add a6, t0, a7
+    sw t5, 4(a6)       # array[j+1] = key
 
     addi t2, t2, 1     # i++
     j outer_loop

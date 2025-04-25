@@ -1,7 +1,7 @@
     .data
 N:      .word 8
-array:  .word 0,1,2,3,4,5,6,7    # исходный массив
-c:      .space 32               # счётчики для Heap’s algorithm
+array:  .word 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15   # исходный массив
+c:      .space 64               # счётчики для Heap’s algorithm
 
     .text
     .globl _start

@@ -1,8 +1,8 @@
     .data
-N:          .word 16
-adj:        .space 1024     # матрица смежности (adj[i][j] = 1 или 0)
-visited:    .space 64
-stack:      .space 256        # стек (размер 64)
+N:          .word 32
+adj:        .space 4096     # матрица смежности (adj[i][j] = 1 или 0)
+visited:    .space 128
+stack:      .space 512        # стек (размер 64)
 
     .text
     .globl _start
@@ -54,7 +54,10 @@ neighbor_loop:
     blt     t6, x0, dfs_loop
 
     # if adj[node][i] == 1 && !visited[i]
-    mul     s7, t2, a5         # row offset = node * 16
+    addi    a7, a5, 0
+    li      s7, 0
+    jal     mull
+    #mul     s7, t2, a5         # row offset = node * 16
     add     s7, s7, t6         # index = node*16 + i
     slli    s7, s7, 2
     add     s8, s0, s7
@@ -76,6 +79,12 @@ neighbor_loop:
 skip_neighbor:
     addi    t6, t6, -1
     j       neighbor_loop
+    
+mull: 
+	add s7, s7, t2
+	addi a7, a7, -1
+	bge a7, zero, mull
+	ret
 
 done:
-    wfi
+    ecall

@@ -39,7 +39,11 @@ loop_neighbors:
     bge s3, t1, next_node
 
     # if graph[t3][s3] == 1 and visited[s3] == 0:
-    mul s4, t3, t1        # s4 = t3 * num_nodes
+    addi a7, t1, 0
+    li s4, 0
+    jal mull
+    
+    #mul s4, t3, t1        # s4 = t3 * num_nodes
     add s4, s4, s3        # s4 = индекс в матрице
     slli s4, s4, 2
     add s5, s0, s4       # адрес graph[t3][s3]
@@ -61,6 +65,12 @@ skip_neighbor:
 next_node:
     addi t3, t3, 1
     j loop_nodes
+    
+mull: 
+	add s4, s4, t3
+	addi a7, a7, -1
+	bge a7, zero, mull
+	ret
 
 end:
     # программа завершилась

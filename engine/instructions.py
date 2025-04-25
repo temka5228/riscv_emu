@@ -247,10 +247,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
+            taken
             )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['beq'][pc] = self.emu.pred_taken_json['beq'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -278,10 +278,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
+            taken
             )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['bne'][pc] = self.emu.pred_taken_json['bne'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -308,10 +308,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
-            )
+            taken
+        )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['blt'][pc] = self.emu.pred_taken_json['blt'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -338,10 +338,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
+            taken
             )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['bge'][pc] = self.emu.pred_taken_json['bge'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -368,10 +368,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
+            taken
             )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['bltu'][pc] = self.emu.pred_taken_json['bltu'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):
@@ -398,10 +398,10 @@ class Instructions:
             rs2,
             self.emu.registers[rs1],
             self.emu.registers[rs2],
-            taken,
-            self.emu.pred_taken_pattern
+            taken
             )
         self.emu.write_taken_branch(taken)
+        self.emu.pred_taken_json['bgeu'][pc] = self.emu.pred_taken_json['bgeu'][pc][1:] + str(int(taken))
         if self.emu.use_bp:
             self.emu.bp_total += 1
             if taken != pred_taken or (taken and pred_next_pc != target):

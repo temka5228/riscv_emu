@@ -58,8 +58,11 @@ update_loop:
     add s4, s3, t6
     lw s5, 0(s4)
     bne s5, zero, skip_j  # if visited[j] != 0 → continue
-
-    mul s6, t0, s0        # row = min_index * n
+	
+    addi a7, s0, 0
+    li s6, 0
+    jal mull
+    #mul s6, t0, s0        # row = min_index * n
     add s6, s6, t2        # row + j
     slli s6, s6, 2
     add s7, s1, s6       # &matrix[min_index][j]
@@ -87,6 +90,12 @@ skip_j:
 
 outer_continue:
     j outer_loop
+    
+mull: 
+	add s6, s6, t0
+	addi a7, a7, -1
+	bge a7, zero, mull
+	ret
 
 end:
     # halt или бесконечный цикл

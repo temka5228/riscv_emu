@@ -36,7 +36,8 @@ class RISCVEmu:
 
         self.btb = {}
         self.last_pred = None
-        self.pred_taken_pattern = '0' * 10
+        self.pred_taken_pattern = '0' * 8
+        self.pred_taken_json = {}
 
     def step(self):
         self.instr_count += 1
@@ -58,7 +59,6 @@ class RISCVEmu:
         if self.IF_ID and not self.stall:
             instr = self.IF_ID
             decoded = self.decoder.decode(instr['raw'])
-            #print(decoded, 'decoded')
             decoded['pc'] = instr['pc']
             if self.use_bp:
                 decoded['pred_taken'] = instr['pred_taken']
@@ -106,13 +106,12 @@ class RISCVEmu:
 
         self.running = True
         while self.running:
-
             try:
                 self.step()
             except Exception as ex:
                 print(f'Exception : {ex}')
                 self.running = False
-
+                
     def read_memory_word(self, addr):
         b = self.memory[addr:addr + 4]
         return int.from_bytes(b, byteorder='little')
@@ -125,9 +124,20 @@ class RISCVEmu:
             self.running = False
         self.pc = self.load_address
 
-    def log_branch_info(self, pc, next_pc, instr_type, rs1, rs2, reg_rs1, reg_rs2, taken, pred_taken):
+    def log_branch_info(self, pc, next_pc, instr_type, rs1, rs2, reg_rs1, reg_rs2, taken):
         with open("./data/branch_log.csv", "a") as f:
-            f.write(f"{pc},{next_pc},{instr_type},{rs1},{rs2},{reg_rs1},{reg_rs2},{int(taken)},{pred_taken}\n")
+            f.write(f"{pc},{next_pc},{instr_type},{rs1},{rs2},{reg_rs1},{reg_rs2},{int(taken)},{self.pred_taken_pattern},{self.get_log_json(instr_type, pc)}\n")
+
+    def get_log_json(self, instr_type, pc):
+        type_json = self.pred_taken_json.get(instr_type, None)
+        if not type_json:
+            self.pred_taken_json[instr_type] = {pc: '0' * 8}
+        else:
+            pc_json = type_json.get(pc, None)
+            if not pc_json:
+                self.pred_taken_json[instr_type][pc] = '0' * 8 
+        return self.pred_taken_json[instr_type][pc]
+
     
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}

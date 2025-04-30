@@ -3,7 +3,7 @@ from registers import Registers
 from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
-from predictor import GSharePredictor, BimodalPredictor
+from predictor import GSharePredictor, BimodalPredictor, MLPredictor
 from executor import Executor
 
 class RISCVEmu:
@@ -15,6 +15,7 @@ class RISCVEmu:
         self.bp_total = 0
         self.bp_mispredict = 0
         self.instr_count = 0
+        self.pred_count = 8
 
         self.registers = Registers()
         self.csr = Registers(1024)
@@ -22,7 +23,8 @@ class RISCVEmu:
         self.instructions = Instructions(self)
         self.decoder = Decoder(self)
         self.executor = Executor(self)
-        self.bp = GSharePredictor(history_bits=12, bht_bits=12)
+        #self.bp = GSharePredictor(history_bits=12, bht_bits=12)
+        self.bp = MLPredictor()
 
         self.stall = False
         self.flush = False
@@ -36,8 +38,9 @@ class RISCVEmu:
 
         self.btb = {}
         self.last_pred = None
-        self.pred_taken_pattern = '0' * 8
+        self.pred_taken_pattern = '0' * self.pred_count
         self.pred_taken_json = {}
+        self.log_file = 'insertion.csv'
 
     def step(self):
         self.instr_count += 1
@@ -106,6 +109,7 @@ class RISCVEmu:
 
         self.running = True
         while self.running:
+
             try:
                 self.step()
             except Exception as ex:
@@ -124,19 +128,32 @@ class RISCVEmu:
             self.running = False
         self.pc = self.load_address
 
-    def log_branch_info(self, pc, next_pc, instr_type, rs1, rs2, reg_rs1, reg_rs2, taken):
-        with open("./data/branch_log.csv", "a") as f:
-            f.write(f"{pc},{next_pc},{instr_type},{rs1},{rs2},{reg_rs1},{reg_rs2},{int(taken)},{self.pred_taken_pattern},{self.get_log_json(instr_type, pc)}\n")
+    def log_branch_info(self, pc, taken):
+        with open("./data/" + self.log_file, "a") as f:
+            f.write(f"{pc},{int(taken)},{self.pred_taken_pattern},{self.get_log_json(pc)}\n")
 
-    def get_log_json(self, instr_type, pc):
-        type_json = self.pred_taken_json.get(instr_type, None)
+    def wirte_last_branch(self, pc, instr_type):
+        self.bp.last_branch = {
+            'pc': pc,
+            'pred_all': self.get_log_json(instr_type, pc),
+            'pred_json': self.pred_taken_json,
+        }
+
+
+    def get_log_json(self, pc):
+        '''type_json = self.pred_taken_json.get(instr_type, None)
         if not type_json:
-            self.pred_taken_json[instr_type] = {pc: '0' * 8}
+            self.pred_taken_json[instr_type] = {pc: '0' * self.pred_count}
         else:
             pc_json = type_json.get(pc, None)
             if not pc_json:
-                self.pred_taken_json[instr_type][pc] = '0' * 8 
-        return self.pred_taken_json[instr_type][pc]
+                self.pred_taken_json[instr_type][pc] = '0' * self.pred_count
+        return self.pred_taken_json[instr_type][pc]'''
+        target_pc = self.pred_taken_json.get(pc, None)
+        if not target_pc:
+            self.pred_taken_json[pc] = '0' * self.pred_count
+        return self.pred_taken_json[pc]
+
 
     
     def get_state(self):
@@ -155,8 +172,6 @@ class RISCVEmu:
             pc += 4
         return json_res
     
-    def write_taken_branch(self, taken:bool):
-        self.pred_taken_pattern = self.pred_taken_pattern[1:] + str(int(taken))
 
     def set_address(self, address):
         if address >= 0:

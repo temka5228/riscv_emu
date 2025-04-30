@@ -126,7 +126,7 @@ function createHandlers() {
         address: address_start
       })
     })
-    return await response.json()
+    return await response.json
   })
 
   ipcMain.handle('load-file', async (_, binaryString, address) => {

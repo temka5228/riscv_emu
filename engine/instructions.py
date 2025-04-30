@@ -1,6 +1,7 @@
 # instructions.py
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from predictor import MLPredictor
 if TYPE_CHECKING:
     import riscv_emu
 #from riscv_emu import RISCVEmu
@@ -239,185 +240,86 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "beq",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-            )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['beq'][pc] = self.emu.pred_taken_json['beq'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
 
 
     def bne(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] != self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "bne",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-            )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['bne'][pc] = self.emu.pred_taken_json['bne'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
     
     def blt(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] < self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "blt",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-        )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['blt'][pc] = self.emu.pred_taken_json['blt'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
+
     #sext offset and up
     def bge(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] >= self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "bge",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-            )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['bge'][pc] = self.emu.pred_taken_json['bge'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
+
     #unsigned
     def bltu(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "bltu",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-            )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['bltu'][pc] = self.emu.pred_taken_json['bltu'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
+
     #unsigned
     def bgeu(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
-        self.emu.log_branch_info(
-            pc,
-            pc + offset,
-            "bgeu",
-            rs1,
-            rs2,
-            self.emu.registers[rs1],
-            self.emu.registers[rs2],
-            taken
-            )
-        self.emu.write_taken_branch(taken)
-        self.emu.pred_taken_json['bgeu'][pc] = self.emu.pred_taken_json['bgeu'][pc][1:] + str(int(taken))
-        if self.emu.use_bp:
-            self.emu.bp_total += 1
-            if taken != pred_taken or (taken and pred_next_pc != target):
-                self.emu.bp_mispredict += 1
-                self.emu.flush = True
-                self.emu.pc = target
-            if taken:
-                self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
-        else:
-            if taken:
-                self.emu.flush = True
-            self.emu.pc = target
+        print(taken, pred_taken)
+
+        self.update_ml_bp(pc, taken)
+        self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
 
     """    R32M INSTRUCTIONS    """
 
     def remu(self, rs1, rs2, rd):
         value = self.emu.registers[rs1] % self.emu.registers[rs2]
         self.emu.registers[rd] = value
+
+    def update_ml_bp(self, pc, taken):
+        if type(self.emu.bp) == MLPredictor and self.emu.use_bp:
+            self.emu.bp.update_last_branch({'pc': pc % 64,
+                                            'pred_all': self.emu.pred_taken_pattern,
+                                            'pred_json':self.emu.get_log_json(pc)
+                                            })
+            self.emu.pred_taken_pattern = self.emu.pred_taken_pattern[1:] + str(int(taken))
+            self.emu.pred_taken_json[pc] = self.emu.pred_taken_json[pc][1:] + str(int(taken))
+
+    def use_predict(self, taken, pred_taken, pred_next_pc, target, pc):
+        if self.emu.use_bp:
+            self.emu.bp_total += 1
+            if taken != pred_taken or (taken and pred_next_pc != target):
+                self.emu.bp_mispredict += 1
+                self.emu.flush = True
+                self.emu.pc = target
+            if taken:
+                self.emu.btb[pc] = target
+            self.emu.bp.update(pc, taken)
+        else:
+            if taken:
+                self.emu.flush = True
+            self.emu.pc = target

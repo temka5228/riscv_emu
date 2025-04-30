@@ -170,19 +170,18 @@ body {
 
 .editor-section {
     display: grid;
-    grid-template-rows: 1fr 0fr;
+    grid-template-rows: 1fr 0fr 0fr;
     box-sizing: border-box;
     overflow-y: hidden;
 }
 
 .editor {
-    flex-grow: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     box-sizing: border-box;
     font-family: monospace;
     font-size: 14px;
-    overflow-y: overlay;
+    overflow-y:auto;
 }
 
 .code-editor, .output-console {
@@ -210,6 +209,19 @@ body {
 .output-console {
     border-left: 1px solid #4a4a4a;
     border-radius: 0px 8px 8px 0px
+}
+
+.status-container {
+    display: grid;
+    grid-template-columns: repeat(4, 0fr);
+    justify-content: end;
+}
+
+.status-container div {
+    white-space: nowrap;
+    font-family: 'Segoe UI';
+    font-size: 14px;
+    padding-left: 10px;
 }
 
 .console {

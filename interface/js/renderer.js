@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileName = document.getElementById('file-name');
     const terminal = document.getElementById('console');
 
+    const status = document.getElementById('running');
+    const executionTime = document.getElementById('time');
+
 
     // Инициализация редактора кода
     codeEditor.innerHTML = '// Your code here';
@@ -69,12 +72,25 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     
     runBtn.addEventListener('click', async () => {
-        await riscvAPI.startEmulation(parseInt(textAddress.value));
-        updateTable();
+        //status.innerHTML = 'running...';
+        riscvAPI.startEmulation(parseInt(textAddress.value));
+        //const responseRunOk = await responseRun.ok
+        //console.log(responseRunOk)
+        /*if (responseRunOk) {
+            //updateTable();
+            //const runJson = await responseRun.json
+            status.innerHTML = 'Completed'
+            //executionTime.innerHTML = runJson['time']
+        }
+        else {
+            //status.innerHTML = 'terminated'
+            //executionTime.innerHTML = '0.000'
+        }*/
     })
 
     pauseBtn.addEventListener('click', () => {
     })
+
 
     memorySize.addEventListener('change', () => {
         textAddress.max = memorySize.value;

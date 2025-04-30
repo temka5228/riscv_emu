@@ -1,14 +1,7 @@
 from riscv_emu import RISCVEmu
 
 data = [
-    'insertion',
-    'bubble',
-    'bfs',
-    'dfs',
-    'combinations',
-    'dijkstra',
-    'flooding',
-    'bgp'
+    'bubble'
 ]
 
 riscv = RISCVEmu()

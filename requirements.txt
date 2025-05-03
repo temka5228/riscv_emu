@@ -2,3 +2,4 @@ fastapi
 uvicorn
 pyinstaller
 pydantic
+river

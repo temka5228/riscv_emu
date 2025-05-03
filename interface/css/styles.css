@@ -151,7 +151,7 @@ body {
 }
 .start-stop-buttons {
     display: grid;
-    grid-template-columns: repeat(3, 0fr);
+    grid-template-columns: repeat(2, 0fr);
     justify-content: space-between;
     gap: 10px;
 }
@@ -213,21 +213,31 @@ body {
 
 .status-container {
     display: grid;
-    grid-template-columns: repeat(4, 0fr);
-    justify-content: end;
+    grid-template-columns: 1fr repeat(4, 0fr);
+    margin-top: 5px;
+    justify-items: flex-start;
+    column-gap: 2px;
 }
 
 .status-container div {
+    display: flex;
     white-space: nowrap;
     font-family: 'Segoe UI';
-    font-size: 14px;
-    padding-left: 10px;
+    font-size: 12px;
+    padding: 2px;
+    border: solid;
+    border-radius: 5px;
+    border-color: var(--console-table-color);
+    border-width: 1px;
 }
 
+.status-container div p {
+    margin: 2px;
+}
 .console {
     background-color: var(--console-table-color);
     border-radius: 8px;
-    margin-top: 10px;
+    margin-top: 5px;
     padding: 10px;
     font-family: monospace;
     overflow-y: overlay;

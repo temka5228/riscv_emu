@@ -5,9 +5,11 @@ contextBridge.exposeInMainWorld('riscvAPI', {
         return await ipcRenderer.invoke('load-file', binaryString, address)
     },
     startEmulation: async (address) => {
-       return await ipcRenderer.invoke('run', address)
+        return await ipcRenderer.invoke('run', address)
     },
-    //getState: () => fetch('http://localhost:8000/state').then(res => console.log(res.json())),
+    stop: async () => {
+        ipcRenderer.invoke('stop')
+    },
     getRegisters: async () => {
         return await ipcRenderer.invoke('get-registers')
     },
@@ -23,8 +25,14 @@ contextBridge.exposeInMainWorld('riscvAPI', {
     setMemorySize: async (size) => {
         return ipcRenderer.invoke('set-memory', size)
     },
-
     onConsoleOutput: (callback) => {
         ipcRenderer.on('console-output', (_, data) => callback(data))
+    },
+    selectPredictor: async (name) => {
+        return await ipcRenderer.invoke('select-predictor', name)
+    },
+    useBranch: async (use) => {
+        return await ipcRenderer.invoke('use-bp', use)
     }
+
 })

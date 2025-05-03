@@ -14,24 +14,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadData = document.getElementById('load-data');
 
     const runBtn = document.getElementById('button-start');
-    const pauseBtn = document.getElementById('button-pause');
+    //const pauseBtn = document.getElementById('button-pause');
+    const stopBtn = document.getElementById('button-stop');
     
     const textAddress = document.getElementById('text-address');
     const dataAddress = document.getElementById('data-address');
     const memorySize = document.getElementById('memory-size');
-    const predictor = document.getElementById('ml-prediction');
+    const predictorSelector = document.getElementById('branch-predictor');
+    const usePredictor = document.getElementById('use-predictor')
 
     const fileName = document.getElementById('file-name');
     const terminal = document.getElementById('console');
 
     const status = document.getElementById('running');
     const executionTime = document.getElementById('time');
+    const predictionCount = document.getElementById('prediction');
+    const mispredictCount = document.getElementById('mispredict');
+    const cyclesCount = document.getElementById('cycles');
 
 
     // Инициализация редактора кода
     codeEditor.innerHTML = '// Your code here';
-    
+    riscvAPI.selectPredictor(predictorSelector.value);
+    riscvAPI.useBranch(usePredictor.checked)
+    riscvAPI.setMemorySize(parseInt(memorySize.value))
+
     let base64String = '';
+
 
     // Обработчик загрузки файла
     async function readFile() {
@@ -72,25 +81,35 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     
     runBtn.addEventListener('click', async () => {
-        //status.innerHTML = 'running...';
-        riscvAPI.startEmulation(parseInt(textAddress.value));
-        //const responseRunOk = await responseRun.ok
-        //console.log(responseRunOk)
-        /*if (responseRunOk) {
-            //updateTable();
-            //const runJson = await responseRun.json
-            status.innerHTML = 'Completed'
-            //executionTime.innerHTML = runJson['time']
+        status.innerHTML = 'running...';
+        const responseRun = await riscvAPI.startEmulation(parseInt(textAddress.value));
+        if (responseRun.ok) {
+            updateTable();
+            const runJson = responseRun.json
+            status.innerText = 'completed'
+            executionTime.innerText = runJson.time.toFixed(4)
+            predictionCount.innerText = runJson.prediction
+            mispredictCount.innerText = runJson.mispredict 
+            cyclesCount.innerText = runJson.cycles
         }
         else {
-            //status.innerHTML = 'terminated'
-            //executionTime.innerHTML = '0.000'
-        }*/
+            status.innerHTML = 'terminated'
+            executionTime.innerHTML = '0.0000'
+        }
     })
 
-    pauseBtn.addEventListener('click', () => {
+    stopBtn.addEventListener('click', () => {
+        riscvAPI.stop();
     })
 
+
+    predictorSelector.addEventListener('change', () => {
+        riscvAPI.selectPredictor(predictorSelector.value)
+    })
+
+    usePredictor.addEventListener('change', () => {
+        riscvAPI.useBranch(usePredictor.checked)
+    })
 
     memorySize.addEventListener('change', () => {
         textAddress.max = memorySize.value;
@@ -102,8 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
     riscvAPI.onConsoleOutput((data) => {
-        console.log(data);
-        terminal.innerHTML += `${data}<br/>`;
+        terminal.innerText += data;
         terminal.scroll({
             top: terminal.scrollHeight,
             behavior:'smooth'

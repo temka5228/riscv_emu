@@ -15,7 +15,7 @@ class RISCVEmu:
         self.bp_total = 0
         self.bp_mispredict = 0
         self.instr_count = 0
-        self.pred_count = 8
+        self.pred_count = 4
 
         self.registers = Registers()
         self.csr = Registers(1024)
@@ -38,7 +38,7 @@ class RISCVEmu:
 
         self.btb = {}
         self.last_pred = None
-        self.pred_taken_pattern = '0' * self.pred_count
+        self.pred_taken_pattern = '0' * self.pred_count * 2
         self.pred_taken_json = {}
         self.log_file = 'insertion.csv'
 
@@ -54,9 +54,7 @@ class RISCVEmu:
 
         if self.ID_EX and not self.stall:
             self.executor.execute_instruction(self.ID_EX)
-            #print(self.registers)
             self.EX_MEM = self.ID_EX
-            #print(self.EX_MEM, 'executer')
             self.ID_EX = None
         
         if self.IF_ID and not self.stall:
@@ -70,7 +68,6 @@ class RISCVEmu:
             if self.EX_MEM and 'rd' in decoded and 'rd' in self.EX_MEM:
                 if decoded.get('rs1') == self.EX_MEM.get('rd') or decoded.get('rs2') == self.EX_MEM.get('rd'):
                     self.stall = True
-                    #return
             else:
                 self.stall = False
     
@@ -88,13 +85,17 @@ class RISCVEmu:
                 'raw': instr_bytes
             }
             if self.use_bp:
-                pred_taken = self.bp.predict(self.pc)
+                if type(self.bp) == MLPredictor:
+                    pred_taken = self.bp.predict({'pc': self.pc, 
+                                    'pred_all': self.pred_taken_pattern,
+                                    'pred_json': self.get_log_json(self.pc)})
+                else:
+                    pred_taken = self.bp.predict(self.pc)
                 self.IF_ID['pred_taken'] = pred_taken
                 self.IF_ID['pred_next_pc'] = self.btb.get(self.pc, self.pc + 4) if pred_taken else self.pc + 4
                 self.pc = self.IF_ID['pred_next_pc']
             else:
                 self.pc += 4
-            #print(self.IF_ID, 'fetch')
         else: self.stall = False
 
     def run(self, address=None):
@@ -102,14 +103,16 @@ class RISCVEmu:
         self.ID_EX = None
         self.EX_MEM = None
         self.MEM_WB = None
+
         self.instr_count = 0
+        self.bp_total = 0
+        self.bp_mispredict = 0
 
         if address != None:
             self.pc = address
 
         self.running = True
         while self.running:
-
             try:
                 self.step()
             except Exception as ex:
@@ -141,14 +144,6 @@ class RISCVEmu:
 
 
     def get_log_json(self, pc):
-        '''type_json = self.pred_taken_json.get(instr_type, None)
-        if not type_json:
-            self.pred_taken_json[instr_type] = {pc: '0' * self.pred_count}
-        else:
-            pc_json = type_json.get(pc, None)
-            if not pc_json:
-                self.pred_taken_json[instr_type][pc] = '0' * self.pred_count
-        return self.pred_taken_json[instr_type][pc]'''
         target_pc = self.pred_taken_json.get(pc, None)
         if not target_pc:
             self.pred_taken_json[pc] = '0' * self.pred_count
@@ -183,5 +178,17 @@ class RISCVEmu:
     def clear_registers(self):
         del self.registers
         self.registers = Registers()
-        
+
+    def select_predictor(self, name:str):
+        name = name.lower()
+        match name:
+            case 'gshare':
+                self.bp = GSharePredictor()
+            case 'mlpredictor':
+                self.bp = MLPredictor()
+            case 'bimodal':
+                self.bp = BimodalPredictor()
+            case _ as c:
+                raise Exception(f'{c} not in {['gshare', 'bimodal', 'mlpredictor']}')
+        self.btb = {}
 

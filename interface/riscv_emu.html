@@ -65,11 +65,11 @@
                                         <path d="M20.492,7.969,10.954.975A5,5,0,0,0,3,5.005V19a4.994,4.994,0,0,0,7.954,4.03l9.538-6.994a5,5,0,0,0,0-8.062Z"/>
                                     </svg>
                                 </button>
-                                <button class="pause" id="button-pause">
+                                <!--<button class="pause" id="button-pause">
                                     <svg xmlns="http://www.w3.org/2000/svg" id="Filled" viewBox="0 0 24 24" width="20" height="20">
                                         <path d="M6.5,0A3.5,3.5,0,0,0,3,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,6.5,0Z"/><path d="M17.5,0A3.5,3.5,0,0,0,14,3.5v17a3.5,3.5,0,0,0,7,0V3.5A3.5,3.5,0,0,0,17.5,0Z"/>
                                     </svg>
-                                </button>
+                                </button>-->
                                 <button class="stop" id="button-stop">
                                     <svg xmlns="http://www.w3.org/2000/svg"  version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve" width="20" height="20">
                                         <path d="M106.667,0h298.667C464.244,0,512,47.756,512,106.667v298.667C512,464.244,464.244,512,405.333,512H106.667  C47.756,512,0,464.244,0,405.333V106.667C0,47.756,47.756,0,106.667,0z"/>
@@ -84,10 +84,26 @@
                                 <div class="output-console" id="output-console"></div>
                             </div>
                             <div class="status-container">
-                                <div id="status">Status: </div>
-                                <div id="running">not running</div>
-                                <div id="execution">Execution time: </div>
-                                <div id="time">0.000</div>
+                                <div>
+                                    <p>Status: </p>
+                                    <p id="running">not running</p>
+                                </div>
+                                <div>
+                                    <p>Prediction: </p>
+                                    <p id="prediction">0</p>
+                                </div>
+                                <div>
+                                    <p>Mispredict: </p>
+                                    <p id="mispredict">0</p>
+                                </div>
+                                <div>
+                                    <p>Cycles: </p>
+                                    <p id="cycles">0</p>
+                                </div>
+                                <div>
+                                    <p>time: </p>
+                                    <p id="time">0.0000</p>
+                                </div>
                             </div>
                             <div class="console" id="console">
                                 
@@ -115,8 +131,16 @@
                         <h1>SETTINGS</h1>
                     </div>
                     <div>
-                        <label for="ml-checkbox">ML branch prediction</label>
-                        <input type="checkbox" id="ml-checkbox" name="ml-checkbox">
+                        <label for="branch-predictor">Branch predictor</label>
+                        <select id="branch-predictor" name="branch-predictor">
+                            <option value="gshare">GShare</option>
+                            <option value="bimodal">Bimodal</option>
+                            <option value="mlpredictor">MLPredictor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="use-predictor">Use predictor</label>
+                        <input type="checkbox" id="use-predictor" name="use-predictor" checked>
                     </div>
                     <div>
                         <label for="memory-address">Memory address of .text</label>

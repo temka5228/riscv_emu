@@ -119,14 +119,19 @@ app.on('uncaughtException', (err) => {
 // CREATING HANDLERS
 function createHandlers() {
   ipcMain.handle('run', async(_, address_start) => {
-    response = await fetch(URL + '/start', {
+    const response = await fetch(URL + '/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         address: address_start
       })
     })
-    return await response.json
+    const json = await response.json()
+    return {ok: response.ok, json:json}
+  })
+
+  ipcMain.handle('stop', async () => {
+    fetch(URL + '/stop')
   })
 
   ipcMain.handle('load-file', async (_, binaryString, address) => {
@@ -168,7 +173,6 @@ function createHandlers() {
   })
   
   ipcMain.handle('set-memory', async (_, size) => {
-    console.log(typeof size)
     response = await fetch(URL + '/set-memory', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -177,5 +181,29 @@ function createHandlers() {
       })
     })
     return await response.json()
+  })
+
+  ipcMain.handle('select-predictor', async(_, name) => {
+    response = await fetch(URL + '/select-predictor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify ({
+        name: name
+      })
+    })
+    const json = await response.json()
+    return {ok: response.ok, json: json}
+  })
+
+  ipcMain.handle('use-bp', async(_, use) => {
+    response = await fetch(URL + '/use-bp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify ({
+        use:use
+      })
+    })
+    const json = await response.json()
+    return {ok: response.ok, json: json}
   })
 }

@@ -15,7 +15,7 @@ class File(BaseModel):
 
 @app.post("/load/")
 async def load_file(file = Body(embed=True), address= Body(embed=True)):
-    print('in python func load file', file)
+    #print('in python func load file', file)
     programm = bytearray(base64.b64decode(file))
     riscv.load_binary(programm, address)
     return {"status": "completed"}
@@ -31,10 +31,29 @@ def set_memory_size(size= Body(embed=True)):
     return {"status": "completed"}
 
 @app.post('/start')
-def run(address= Body(embed=True)):
+async def run(address= Body(embed=True)):
     time_start = time.time()
     riscv.run(address)
-    return {"command": "run", "status": "completed", "time":time.time() - time_start}
+    return {"command": "run", 
+            "status": "completed", 
+            "time":time.time() - time_start,
+            "cycles":riscv.instr_count + riscv.bp_mispredict * 2,
+            "prediction":riscv.bp_total,
+            "mispredict":riscv.bp_mispredict}
+
+@app.get('/stop')
+async def stop():
+    riscv.running = False
+
+@app.post('/select-predictor')
+def select_predictor(name= Body(embed=True)):
+    riscv.select_predictor(name)
+    return {'command': 'select-predictor', 'status':'completed'}
+
+@app.post('/use-bp')
+def use_bp(use= Body(embed=True)):
+    riscv.use_bp = use
+    return {'command': 'use-bp', 'status':'changed'}
 
 @app.get('/decode')
 def decode():

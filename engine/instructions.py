@@ -240,7 +240,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -250,7 +249,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] != self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -259,7 +257,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] < self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -269,7 +266,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] >= self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -279,7 +275,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) < abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -289,7 +284,6 @@ class Instructions:
         offset = sextToInt(offset, 12)
         taken = (abs(self.emu.registers[rs1]) >= abs(self.emu.registers[rs2]))
         target = pc + offset if taken else pc + 4
-        print(taken, pred_taken)
 
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
@@ -302,10 +296,10 @@ class Instructions:
 
     def update_ml_bp(self, pc, taken):
         if type(self.emu.bp) == MLPredictor and self.emu.use_bp:
-            self.emu.bp.update_last_branch({'pc': pc % 64,
+            '''self.emu.bp.update_last_branch({'pc': pc % 128,
                                             'pred_all': self.emu.pred_taken_pattern,
                                             'pred_json':self.emu.get_log_json(pc)
-                                            })
+                                            })'''
             self.emu.pred_taken_pattern = self.emu.pred_taken_pattern[1:] + str(int(taken))
             self.emu.pred_taken_json[pc] = self.emu.pred_taken_json[pc][1:] + str(int(taken))
 
@@ -318,7 +312,13 @@ class Instructions:
                 self.emu.pc = target
             if taken:
                 self.emu.btb[pc] = target
-            self.emu.bp.update(pc, taken)
+            if type(self.emu.bp) == MLPredictor:
+                self.emu.bp.update({'pc': pc, 
+                                    'pred_all': self.emu.pred_taken_pattern,
+                                    'pred_json': self.emu.get_log_json(pc)},
+                                    taken)
+            else:
+                self.emu.bp.update(pc, taken)
         else:
             if taken:
                 self.emu.flush = True

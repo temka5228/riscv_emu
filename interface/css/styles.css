@@ -213,7 +213,7 @@ body {
 
 .status-container {
     display: grid;
-    grid-template-columns: 1fr repeat(4, 0fr);
+    grid-template-columns: 1fr repeat(5, 0fr);
     margin-top: 5px;
     justify-items: flex-start;
     column-gap: 2px;

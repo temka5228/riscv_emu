@@ -1,7 +1,7 @@
 # instructions.py
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from predictor import MLPredictor
+import predictor as pr
 if TYPE_CHECKING:
     import riscv_emu
 #from riscv_emu import RISCVEmu
@@ -236,7 +236,6 @@ class Instructions:
         self.emu.registers[rd] = value
 
     def beq(self, rs1, rs2, offset, pc, pred_taken, pred_next_pc):
-        #if self.emu.registers[rs1] == self.emu.registers[rs2]:
         offset = sextToInt(offset, 12)
         taken = (self.emu.registers[rs1] == self.emu.registers[rs2])
         target = pc + offset if taken else pc + 4
@@ -288,18 +287,39 @@ class Instructions:
         self.update_ml_bp(pc, taken)
         self.use_predict(taken, pred_taken, pred_next_pc, target, pc)
 
-    """    R32M INSTRUCTIONS    """
+    """    RV32M INSTRUCTIONS    """
+
+    def mul(self, rs1, rs2, rd):
+        self.emu.registers[rd] = self.emu.registers[rs1] * self.emu.registers[rs2] & 0xFFFF_FFFF
+
+    def mulh(self, rs1, rs2, rd):
+        self.emu.registers[rd] = (self.emu.registers[rs1] * self.emu.registers[rs2]) >> 32
+
+    def mulhsu(self, rs1, rs2, rd):
+        self.emu.registers[rd] = (self.emu.registers[rs1] * abs(self.emu.registers[rs2])) >> 32
+    
+    def mulhu(self, rs1, rs2, rd):
+        self.emu.registers[rd] = (abs(self.emu.registers[rs1] * self.emu.registers[rs2])) >> 32
+
+    def div(self, rs1, rs2, rd):
+        self.emu.registers[rd] = int(self.emu.registers[rs1] / self.emu.registers[rs2])
+
+    def divu(self, rs1, rs2, rd):
+        self.emu.registers[rd] = abs(int(self.emu.registers[rs1] / self.emu.registers[rs2]))
+
+    def rem(self, rs1, rs2, rd):
+        value = abs(self.emu.registers[rs1] % self.emu.registers[rs2])
+        self.emu.registers[rd] = value
 
     def remu(self, rs1, rs2, rd):
         value = self.emu.registers[rs1] % self.emu.registers[rs2]
         self.emu.registers[rd] = value
 
+
+    """    BRANCH PREDICTORS METHODS    """
+
     def update_ml_bp(self, pc, taken):
-        if type(self.emu.bp) == MLPredictor and self.emu.use_bp:
-            '''self.emu.bp.update_last_branch({'pc': pc % 128,
-                                            'pred_all': self.emu.pred_taken_pattern,
-                                            'pred_json':self.emu.get_log_json(pc)
-                                            })'''
+        if type(self.emu.bp) == pr.MLPredictor and self.emu.use_bp:
             self.emu.pred_taken_pattern = self.emu.pred_taken_pattern[1:] + str(int(taken))
             self.emu.pred_taken_json[pc] = self.emu.pred_taken_json[pc][1:] + str(int(taken))
 
@@ -312,11 +332,14 @@ class Instructions:
                 self.emu.pc = target
             if taken:
                 self.emu.btb[pc] = target
-            if type(self.emu.bp) == MLPredictor:
+                self.emu.count_true += 1
+            else: self.emu.count_false += 1
+
+            if type(self.emu.bp) == pr.MLPredictor:
                 self.emu.bp.update({'pc': pc, 
                                     'pred_all': self.emu.pred_taken_pattern,
                                     'pred_json': self.emu.get_log_json(pc)},
-                                    taken)
+                                    taken, pred_taken)
             else:
                 self.emu.bp.update(pc, taken)
         else:

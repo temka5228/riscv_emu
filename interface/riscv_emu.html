@@ -89,12 +89,16 @@
                                     <p id="running">not running</p>
                                 </div>
                                 <div>
-                                    <p>Prediction: </p>
-                                    <p id="prediction">0</p>
+                                    <p>Predictor: </p>
+                                    <p id="predictor"></p>
                                 </div>
                                 <div>
-                                    <p>Mispredict: </p>
-                                    <p id="mispredict">0</p>
+                                    <p>Predicts: </p>
+                                    <p id="accuracy">0</p>
+                                </div>
+                                <div>
+                                    <p>Mispredicts: </p>
+                                    <p id="rocauc">0</p>
                                 </div>
                                 <div>
                                     <p>Cycles: </p>
@@ -136,6 +140,16 @@
                             <option value="gshare">GShare</option>
                             <option value="bimodal">Bimodal</option>
                             <option value="mlpredictor">MLPredictor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="model-selection">Select model</label>
+                        <select id="model-selection" name="model-selection">
+                            <option value="logistic">Logistic Regression</option>
+                            <option value="knn">KNN Classifier</option>
+                            <option value="naivebayes">Bernoulli NB</option>
+                            <option value="tree">Hoeffding Tree Classifier</option>
+                            <option value="forest">AMF Classifier</option>
                         </select>
                     </div>
                     <div>

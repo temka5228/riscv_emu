@@ -33,6 +33,9 @@ contextBridge.exposeInMainWorld('riscvAPI', {
     },
     useBranch: async (use) => {
         return await ipcRenderer.invoke('use-bp', use)
+    },
+    selectModel: async (model) => {
+        return await ipcRenderer.invoke('model-select', model)
     }
 
 })

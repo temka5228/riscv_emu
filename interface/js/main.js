@@ -12,6 +12,8 @@ const INDEX_PATH = path.join(__dirname, '../riscv_emu.html')
 const HOST = 'localhost'
 const PORT = 8000
 const URL = `http://${HOST}:${PORT}`
+const HEIGHT = 800
+const WIDTH = 1000
 
 const API_PROD_PATH = path.join(process.resourcesPath, '../../dist/riscv_emu.exe')
 const API_DEV_PATH = path.join(__dirname, "../../engine/main.py")
@@ -62,10 +64,10 @@ async function createWindow () {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     },
-    height: 600,
-    width: 800,
-    minHeight: 600,
-    minWidth: 800,
+    height: HEIGHT,
+    width: WIDTH,
+    minHeight: HEIGHT,
+    minWidth: WIDTH,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: '#202225',
@@ -75,7 +77,6 @@ async function createWindow () {
     transparent: true,
     backgroundColor: '#00ffffff'
   })
-
   // LOAD .HTML FILE AND OPEN DEV TOOLS
   await win.loadFile(INDEX_PATH);
   await win.webContents.openDevTools();
@@ -205,5 +206,17 @@ function createHandlers() {
     })
     const json = await response.json()
     return {ok: response.ok, json: json}
+  })
+
+  ipcMain.handle('model-select', async(_, model) => {
+    response = await fetch(URL + '/select-model', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify ({
+        name: model
+      })
+    })
+    //const json = 
+    return await response.json()
   })
 }

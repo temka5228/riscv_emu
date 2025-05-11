@@ -3,42 +3,47 @@ from registers import Registers
 from memory import Memory
 from decoder import Decoder
 from instructions import Instructions
-from predictor import GSharePredictor, BimodalPredictor, MLPredictor
+from predictor import BimodalPredictor, GSharePredictor, MLPredictor
 from executor import Executor
+import traceback
 
 class RISCVEmu:
     def __init__(self, memory_size:int=32768):
+        # Инициализация переменных
         self.load_address = 0
         self.len_file = 0
         self.cycle = 0
         self.pc = 0
         self.bp_total = 0
         self.bp_mispredict = 0
+        self.count_true = 0
+        self.count_false = 0
         self.instr_count = 0
-        self.pred_count = 4
+        self.pred_count = 16
 
+        # Инициализация модулей
         self.registers = Registers()
-        self.csr = Registers(1024)
         self.memory = Memory(memory_size)
         self.instructions = Instructions(self)
-        self.decoder = Decoder(self)
+        self.decoder = Decoder()
         self.executor = Executor(self)
-        #self.bp = GSharePredictor(history_bits=12, bht_bits=12)
         self.bp = MLPredictor()
 
+        # Инициализация флагов состояния
         self.stall = False
         self.flush = False
         self.use_bp = False
         self.running = False
 
+        #инициализация стадий конвейера
         self.IF_ID = None
         self.ID_EX = None
         self.EX_MEM = None
         self.MEM_WB = None
 
+        # Инициализация переменных для предскзателей
         self.btb = {}
-        self.last_pred = None
-        self.pred_taken_pattern = '0' * self.pred_count * 2
+        self.pred_taken_pattern = '0' * (self.pred_count * 2)
         self.pred_taken_json = {}
         self.log_file = 'insertion.csv'
 
@@ -99,14 +104,18 @@ class RISCVEmu:
         else: self.stall = False
 
     def run(self, address=None):
+        # Сброс конвейера
         self.IF_ID = None
         self.ID_EX = None
         self.EX_MEM = None
         self.MEM_WB = None
 
+        # Сброс оценочных переменных
         self.instr_count = 0
         self.bp_total = 0
         self.bp_mispredict = 0
+        self.count_true = 0
+        self.count_false = 0
 
         if address != None:
             self.pc = address
@@ -115,42 +124,35 @@ class RISCVEmu:
         while self.running:
             try:
                 self.step()
-            except Exception as ex:
-                print(f'Exception : {ex}')
+            except Exception as e:
+                print("Сообщение:", str(e))
                 self.running = False
                 
     def read_memory_word(self, addr):
         b = self.memory[addr:addr + 4]
         return int.from_bytes(b, byteorder='little')
 
-    def load_binary(self, file, address):
-        self.len_file = len(file)
+    def load_binary(self, byte_string, address):
+        self.btb = {}
+        self.len_file = len(byte_string)
         try:
-            self.memory[address: address + self.len_file] = file
+            self.memory[address: address + self.len_file] = byte_string
         except ValueError:
             self.running = False
         self.pc = self.load_address
 
+    # Можно удалить
     def log_branch_info(self, pc, taken):
         with open("./data/" + self.log_file, "a") as f:
             f.write(f"{pc},{int(taken)},{self.pred_taken_pattern},{self.get_log_json(pc)}\n")
 
-    def wirte_last_branch(self, pc, instr_type):
-        self.bp.last_branch = {
-            'pc': pc,
-            'pred_all': self.get_log_json(instr_type, pc),
-            'pred_json': self.pred_taken_json,
-        }
-
-
+    # Можно удалить
     def get_log_json(self, pc):
         target_pc = self.pred_taken_json.get(pc, None)
         if not target_pc:
             self.pred_taken_json[pc] = '0' * self.pred_count
         return self.pred_taken_json[pc]
 
-
-    
     def get_state(self):
         return {'registers': repr(self.registers), 'memory': repr(self.memory), 'pc': self.pc}
 
@@ -178,6 +180,11 @@ class RISCVEmu:
     def clear_registers(self):
         del self.registers
         self.registers = Registers()
+
+    def clear_memory(self):
+        ms = self.memory.size
+        del self.memory
+        self.memory = Memory(ms)
 
     def select_predictor(self, name:str):
         name = name.lower()

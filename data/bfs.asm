@@ -1,97 +1,83 @@
     .data
-# Граф: списки смежности (по индексу i для вершины i)
-graph:
-    .word 1, 2, -1         # 0
-    .word 3, 4, -1         # 1
-    .word 5, -1            # 2
-    .word 6, -1            # 3
-    .word 6, -1            # 4
-    .word 7, -1            # 5
-    .word 8, -1            # 6
-    .word 9, -1            # 7
-    .word -1               # 8
-    .word -1               # 9
+N:      .word 6
+adj:    .word 0,1,1,0,0,0
+        .word 1,0,1,0,0,0
+        .word 1,1,0,1,0,0
+        .word 0,0,1,0,1,0
+        .word 0,0,0,1,0,1
+        .word 0,0,0,0,1,0
 
-visited:    .space 40      # 10 элементов
-stack:      .space 40      # стек для DFS
-queue:      .space 40      # очередь для BFS
-top:        .word 0
-head:       .word 0
-tail:       .word 0
-
+visited:.space 24          # visited[6]
+queue:  .space 64          # очередь на 16 элементов
+head:   .word 0
+tail:   .word 0
 
     .text
-    .globl _start
-_start:
-    li t0, 0
-    la t1, visited
-    li a0, 10
-    li a1, -1
-zero_loop_b:
-    beq t0, a0, bfs_init
-    sb zero, 0(t1)
-    addi t0, t0, 1
-    addi t1, t1, 1
-    j zero_loop_b
+    .globl main
+main:
+    # загрузить базовые адреса
+    la s0, adj
+    la s1, visited
+    la s2, queue
+    li s3, 0              # head
+    li s4, 0              # tail
+    li s6, 6              # N
 
-bfs_init:
+    # visited[0] = 1
+    li t0, 1
+    sw t0, 0(s1)
+
     # enqueue(0)
-    la t0, queue
-    li t1, 0
-    sw t1, 0(t0)
-    li t1, 1
-    la t2, tail
-    sw t1, 0(t2)
+    sw zero, 0(s2)        # queue[0] = 0
+    addi s4, s4, 1        # tail++
 
 bfs_loop:
-    la t1, head
-    lw t2, 0(t1)
-    la t3, tail
-    lw t4, 0(t3)
-    beq t2, t4, end_bfs    # if head == tail
+    beq s3, s4, bfs_end   # if head == tail: exit
 
-    la t0, queue
-    slli t5, t2, 2
-    add t0, t0, t5
-    lw t6, 0(t0)           # node = queue[head]
-    addi t2, t2, 1
+    # dequeue u = queue[head]
+    slli t0, s3, 2        # offset = head * 4
+    add t0, s2, t0
+    lw s5, 0(t0)          # u = queue[head]
+    addi s3, s3, 1        # head++
+
+    # i = 0
+    li t0, 0
+
+bfs_inner_loop:
+    bge t0, s6, bfs_loop_end  # if i >= N: next node
+
+    # addr = &adj[u * N + i]
+    mul t1, s5, s6
+    add t1, t1, t0
+    slli t1, t1, 2
+    add t1, s0, t1
+    lw t2, 0(t1)              # t2 = adj[u][i]
+
+    beq t2, zero, skip        # если 0 — пропустить
+
+    # if not visited[i]
+    slli t1, t0, 2
+    add t1, s1, t1
+    lw t2, 0(t1)
+    bne t2, zero, skip        # если уже посещена — пропустить
+
+    # visited[i] = 1
+    li t2, 1
     sw t2, 0(t1)
 
-    la t0, visited
-    add t0, t0, t6
-    lb s7, 0(t0)
-    bne s7, zero, bfs_loop
+    # enqueue i
+    slli t1, s4, 2
+    add t1, s2, t1
+    sw t0, 0(t1)
+    addi s4, s4, 1
 
-    li s7, 1
-    sb s7, 0(t0)           # visited[node] = 1
+skip:
+    addi t0, t0, 1
+    j bfs_inner_loop
 
-    # перебор соседей
-    slli t1, t6, 2
-    la t0, graph
-    add t0, t0, t1
+bfs_loop_end:
+    j bfs_loop
 
-bfs_neighbors:
-    lw t1, 0(t0)
-    beq t1, a1, bfs_loop
-
-    la t2, visited
-    add t2, t2, t1
-    lb t3, 0(t2)
-    bne t3, zero, skip_enqueue
-
-    # enqueue(t1)
-    la t4, tail
-    lw t5, 0(t4)
-    la t6, queue
-    slli s7, t5, 2
-    add t6, t6, s7
-    sw t1, 0(t6)
-    addi t5, t5, 1
-    sw t5, 0(t4)
-
-skip_enqueue:
-    addi t0, t0, 4
-    j bfs_neighbors
-
-end_bfs:
-    wfi
+bfs_end:
+    # end
+    ecall

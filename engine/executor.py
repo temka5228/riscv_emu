@@ -119,7 +119,21 @@ class Executor:
                 self.emu.instructions.bltu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
             case 'bgeu':
                 self.emu.instructions.bgeu(decoded['rs1'], decoded['rs2'], decoded['offset'], decoded['pc'], decoded.get('pred_taken'), decoded.get('pred_next_pc'))
+            case 'mul':
+                self.emu.instructions.mul(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'mulh':
+                self.emu.instructions.mulh(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'mulhsu':
+                self.emu.instructions.mulhsu(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'mulhu':
+                self.emu.instructions.mulhu(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'div':
+                self.emu.instructions.div(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'divu':
+                self.emu.instructions.divu(decoded['rs1'], decoded['rs2'], decoded['rd'])
+            case 'rem':
+                self.emu.instructions.rem(decoded['rs1'], decoded['rs2'], decoded['rd'])
             case 'remu':
-                #print('call remu')
                 self.emu.instructions.remu(decoded['rs1'], decoded['rs2'], decoded['rd'])
+
             case _ as t: raise Exception(f'Unknown decoded[type] = {t}')    

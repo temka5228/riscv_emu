@@ -2,6 +2,7 @@
 
 class Memory:
     def __init__(self, size=4096):
+        self.size = size
         self.__memory = bytearray(size)
 
     
@@ -12,10 +13,6 @@ class Memory:
         return self.__memory[address]
 
     def write(self, address, value):
-        '''
-        if not (0 <= address < len(self.__memory)):
-            raise ValueError("Address out of range")'
-        '''
         self.__memory[address] = value
 
     def asDict(self):
@@ -39,6 +36,7 @@ class Memory:
             pass
         else:
             self.__memory = self.__memory[0:new_size]
+        self.size = len(self.__memory)
 
     def __getitem__(self, key):
         return self.read(key)

@@ -21,15 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const dataAddress = document.getElementById('data-address');
     const memorySize = document.getElementById('memory-size');
     const predictorSelector = document.getElementById('branch-predictor');
-    const usePredictor = document.getElementById('use-predictor')
+    const modelSelector = document.getElementById('model-selection');
+    const usePredictor = document.getElementById('use-predictor');
 
     const fileName = document.getElementById('file-name');
     const terminal = document.getElementById('console');
 
     const status = document.getElementById('running');
+    const predictorType = document.getElementById('predictor');
     const executionTime = document.getElementById('time');
-    const predictionCount = document.getElementById('prediction');
-    const mispredictCount = document.getElementById('mispredict');
+    const Accuracy = document.getElementById('accuracy');
+    const ROCAUC = document.getElementById('rocauc');
     const cyclesCount = document.getElementById('cycles');
 
 
@@ -38,28 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
     riscvAPI.selectPredictor(predictorSelector.value);
     riscvAPI.useBranch(usePredictor.checked)
     riscvAPI.setMemorySize(parseInt(memorySize.value))
+    modelSelector.disabled = predictorSelector.value === 'mlpredictor' ? false:true;
 
     let base64String = '';
 
 
     // Обработчик загрузки файла
-    async function readFile() {
+    uploader.addEventListener("change", async () => {
         var f = uploader.files[0];
         fname = uploader.value.split('\\').pop()
         const arrayBuffer = await f.arrayBuffer();
         base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-        /*
-        responseOk = await riscvAPI.loadFile(base64String);
-        if (responseOk) {
-            responseJson = await riscvAPI.decodeProgramm();
-            updateTable();
-            fileName.innerText = fname;
-            codeEditor.innerHTML = responseJson['bytes'];
-            outputConsole.innerHTML = responseJson['decoded'];
-        } */
-    }
-
-    uploader.addEventListener("change", readFile);
+    });
 
     uploadBtn.addEventListener('click', () => {
         uploader.click();
@@ -88,8 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const runJson = responseRun.json
             status.innerText = 'completed'
             executionTime.innerText = runJson.time.toFixed(4)
-            predictionCount.innerText = runJson.prediction
-            mispredictCount.innerText = runJson.mispredict 
+            Accuracy.innerText = runJson.accuracy
+            ROCAUC.innerText = runJson.rocauc
             cyclesCount.innerText = runJson.cycles
         }
         else {
@@ -103,12 +95,33 @@ document.addEventListener('DOMContentLoaded', () => {
     })
 
 
-    predictorSelector.addEventListener('change', () => {
-        riscvAPI.selectPredictor(predictorSelector.value)
+    predictorSelector.addEventListener('change', async () => {
+        response = await riscvAPI.selectPredictor(predictorSelector.value)
+        if (predictorSelector.value === 'mlpredictor') {
+            modelSelector.disabled = false;
+            if (response.ok) {
+                riscvAPI.selectModel(modelSelector.value)
+                predictorType.innerText = modelSelector.options[modelSelector.selectedIndex].text;  
+            }
+        }
+        else {
+            modelSelector.disabled = true;
+            predictorType.innerText = predictorSelector.options[predictorSelector.selectedIndex].text;
+        }
+    })
+
+    modelSelector.addEventListener('change', () => {
+        riscvAPI.selectModel(modelSelector.value)
+        predictorType.innerText = modelSelector.options[modelSelector.selectedIndex].text;
     })
 
     usePredictor.addEventListener('change', () => {
         riscvAPI.useBranch(usePredictor.checked)
+        predictorType.innerText = usePredictor.checked ? 
+            modelSelector.disabled ? 
+            predictorSelector.options[predictorSelector.selectedIndex].text:
+            modelSelector.options[modelSelector.selectedIndex].text: 
+            'None'
     })
 
     memorySize.addEventListener('change', () => {
@@ -174,6 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableContainer.innerHTML = jsonToTable(responseMemory);
         }
     }
+
     side_buttons[0].click();
     registerBtn.click();
 });

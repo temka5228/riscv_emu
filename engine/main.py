@@ -38,8 +38,8 @@ async def run(address= Body(embed=True)):
             "status": "completed", 
             "time":time.time() - time_start,
             "cycles":riscv.instr_count + riscv.bp_mispredict * 2,
-            "prediction":riscv.bp_total,
-            "mispredict":riscv.bp_mispredict}
+            "accuracy":riscv.bp_total,
+            "rocauc":riscv.bp_mispredict}
 
 @app.get('/stop')
 async def stop():
@@ -55,6 +55,11 @@ def use_bp(use= Body(embed=True)):
     riscv.use_bp = use
     return {'command': 'use-bp', 'status':'changed'}
 
+@app.post('/select-model')
+def select_model(name=Body(embed=True)):
+    riscv.bp.change_model(name)
+    return {'command': 'select-model', 'status':'selected'}
+
 @app.get('/decode')
 def decode():
     res = riscv.decode_programm()
@@ -65,10 +70,6 @@ def get_state():
     print('get_state')
     response = riscv.get_state()
     return response
-
-@app.get('/')
-def root():
-    return HTMLResponse("<h2>Hello METANIT.COM!</h2>")
 
 @app.get('/memory')
 def get_memory():

@@ -4,9 +4,6 @@ if TYPE_CHECKING:
     import riscv_emu
 
 class Decoder:
-    def __init__(self, emu: riscv_emu.RISCVEmu):
-        self.emu = emu
-    
     def decode(self, instruction:int):
         opcode = (instruction >> 2) & 0x1F # код операции 6-2
         #print('in decode method', instruction, hex(instruction >> 2), hex(opcode))
@@ -85,6 +82,20 @@ class Decoder:
                             case _: raise Exception(f'Unknown funct3 in reg/reg: {hex(funct3)}')
                     case 0b01:
                         match funct3:
+                            case 0b000:
+                                return {'type': 'mul', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b001:
+                                return {'type': 'mulh', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b010:
+                                return {'type': 'mulhsu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b011:
+                                return {'type': 'mulhu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b100:
+                                return {'type': 'div', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b101:
+                                return {'type': 'divu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
+                            case 0b110:
+                                return {'type': 'rem', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
                             case 0b111:
                                 #print('decode remu')
                                 return {'type': 'remu', 'rd': rd, 'rs1': rs1, 'rs2': rs2}
